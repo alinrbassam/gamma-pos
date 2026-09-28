@@ -1,6 +1,6 @@
-﻿const crypto = require('crypto');
+const crypto = require('crypto');
 
-const SECRET = 'ZABAD-MASTER-LICENSE-SECRET-2026';
+const SECRET = 'GAMMA-MASTER-LICENSE-SECRET-2026';
 
 function deriveActivationKey(deviceId) {
   const clean = String(deviceId || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
@@ -13,7 +13,7 @@ function deriveActivationKey(deviceId) {
     .digest('hex')
     .toUpperCase()
     .substring(0, 16);
-  return 'ZBD-' + (hash.match(/.{1,4}/g)?.join('-') || hash);
+  return 'GMA-' + (hash.match(/.{1,4}/g)?.join('-') || hash);
 }
 
 const input = process.argv[2];
@@ -21,7 +21,7 @@ const input = process.argv[2];
 if (!input) {
   console.log(`
 =====================================================
-  🔑 ZABAD POS — ACTIVATION KEY GENERATOR
+  🔑 GAMMA POS — ACTIVATION KEY GENERATOR
 =====================================================
 
 Usage:
@@ -38,12 +38,12 @@ try {
   const key = deriveActivationKey(input);
   console.log(`
 =====================================================
-  🔑 ZABAD POS — ACTIVATION KEY
+  🔑 GAMMA POS — ACTIVATION KEY
 =====================================================
   Device Code:     ${input.trim().toUpperCase()}
   Activation Key:  ${key}
 =====================================================
-  👉 Copy & paste this key to your customer on WhatsApp:
+  👉 Copy & paste this key to your customer:
      ${key}
 =====================================================
 `);

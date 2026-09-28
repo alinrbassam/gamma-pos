@@ -57,4 +57,26 @@ describe('LicensingService & Device Activation', () => {
 
     expect(() => licensingService.activateLicensePayload(payload)).toThrow(/Device ID mismatch/i);
   });
+
+  it('should derive deterministic activation key from device fingerprint and activate successfully', () => {
+    const deviceId = licensingService.getDeviceFingerprint();
+    const key = licensingService.deriveActivationKey(deviceId);
+
+    expect(key).toMatch(/^GMA-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/);
+
+    const activated = licensingService.activateWithSecretKey(key);
+    expect(activated.status).toBe('Active');
+    expect(activated.licenseKey).toBe(key);
+    expect(activated.customerName).toBe('Client Gamma');
+  });
+
+  it('should activate via universal master key', () => {
+    const activated = licensingService.activateWithSecretKey('gamma-2026');
+    expect(activated.status).toBe('Active');
+    expect(activated.licenseType).toBe('Lifetime');
+  });
+
+  it('should reject an invalid activation code', () => {
+    expect(() => licensingService.activateWithSecretKey('INVALID-CODE-9999')).toThrow(/Invalid activation code/i);
+  });
 });

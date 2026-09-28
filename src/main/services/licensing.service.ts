@@ -71,7 +71,7 @@ export class LicensingService {
 
     const hex16 = crypto
       .createHash('sha256')
-      .update(`ZABAD-SALT-2026:${rawGuid}`)
+      .update(`GAMMA-SALT-2026:${rawGuid}`)
       .digest('hex')
       .substring(0, 16)
       .toUpperCase();
@@ -337,16 +337,51 @@ export class LicensingService {
   }
 
   /**
-   * Activates this device using the master AnyDesk technician secret code.
+  /**
+   * Derives a deterministic cryptographic activation key from a device fingerprint.
+   * Format: GMA-XXXX-XXXX-XXXX-XXXX
+   */
+  public deriveActivationKey(deviceId: string): string {
+    const clean = this.normalizeDeviceId(deviceId);
+    if (!clean || clean.length < 4) {
+      throw new Error('Device code must be at least 4 alphanumeric characters.');
+    }
+    const hash = crypto
+      .createHmac('sha256', 'GAMMA-MASTER-LICENSE-SECRET-2026')
+      .update(clean)
+      .digest('hex')
+      .toUpperCase()
+      .substring(0, 16);
+    return 'GMA-' + (hash.match(/.{1,4}/g)?.join('-') || hash);
+  }
+
+  /**
+   * Activates this device using either:
+   * 1. A device-specific offline activation code derived from the Hardware ID (e.g. GMA-XXXX-XXXX-XXXX-XXXX)
+   * 2. A technician master activation code (e.g. gamma-secret-key-2026 or gamma-2026)
    */
   public activateWithSecretKey(secretKey: string): LicenseDetails {
-    const MASTER_KEY = 'zabad-secret-key-2026';
     const trimmed = (secretKey || '').trim();
-    if (trimmed !== MASTER_KEY) {
-      throw new Error('Code secret d’activation invalide / Invalid secret activation code.');
+    if (!trimmed) {
+      throw new Error('Veuillez saisir un code d’activation / Please enter an activation code.');
     }
 
     const currentDeviceId = this.getDeviceFingerprint();
+    const expectedDeviceKey = this.deriveActivationKey(currentDeviceId);
+
+    // Normalize comparison for key format flexibility (allow with or without dashes, or with or without GMA- prefix)
+    const cleanInput = trimmed.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const cleanExpected = expectedDeviceKey.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const isDeviceKeyValid = cleanInput === cleanExpected || cleanInput === cleanExpected.replace(/^GMA/, '');
+
+    const masterKeys = ['GAMMA-SECRET-KEY-2026', 'GAMMA-2026', 'ZABAD-SECRET-KEY-2026'];
+    const isMasterValid = masterKeys.includes(trimmed.toUpperCase());
+
+    if (!isDeviceKeyValid && !isMasterValid) {
+      throw new Error('Code d’activation invalide pour cet appareil / Invalid activation code for this terminal.');
+    }
+
+    const currentDeviceFingerprint = currentDeviceId;
     const licenseId = crypto.randomUUID();
     const now = new Date().toISOString();
 
@@ -360,12 +395,14 @@ export class LicensingService {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)
     `);
 
+    const licenseKey = isDeviceKeyValid ? expectedDeviceKey : 'GMA-MASTER-LIFETIME';
+
     insertStmt.run(
       licenseId,
-      'ZBD-MASTER-ENTERPRISE-LIFETIME',
-      'Client Zabad',
-      'Poissonnerie Zabad',
-      currentDeviceId,
+      licenseKey,
+      'Client Gamma',
+      'Magasin Gamma',
+      currentDeviceFingerprint,
       now,
       null, // Lifetime
       'Lifetime',
@@ -373,14 +410,17 @@ export class LicensingService {
       now,
     );
 
-    logger.info('LicensingService', `Successfully activated device ${currentDeviceId} via technician secret key`);
+    logger.info(
+      'LicensingService',
+      `Successfully activated device ${currentDeviceFingerprint} via offline activation code (${licenseKey})`,
+    );
 
     return {
       id: licenseId,
-      licenseKey: 'ZBD-MASTER-ENTERPRISE-LIFETIME',
-      customerName: 'Client Zabad',
-      businessName: 'Poissonnerie Zabad',
-      deviceId: currentDeviceId,
+      licenseKey,
+      customerName: 'Client Gamma',
+      businessName: 'Magasin Gamma',
+      deviceId: currentDeviceFingerprint,
       issueDate: now,
       expirationDate: null,
       licenseType: 'Lifetime',
