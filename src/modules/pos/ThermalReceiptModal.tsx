@@ -27,7 +27,7 @@ export const ThermalReceiptModal: React.FC<Props> = ({
 
   if (!isOpen || !sale) return null;
 
-  const defaultStoreName = language === 'ar' ? 'متجر خليل' : 'Khalil Store';
+  const defaultStoreName = language === 'ar' ? 'متجر غاما' : 'Gamma Store';
   const defaultAddress = language === 'ar' ? 'السوق المركزي' : 'Central Market';
 
   const storeTitle = businessName || defaultStoreName;
@@ -162,7 +162,7 @@ export const ThermalReceiptModal: React.FC<Props> = ({
           {/* Clean Footer */}
           <div className="text-center text-[9px] pt-1 text-slate-700 leading-tight space-y-0.5">
             <p className="font-bold">{language === 'ar' ? 'شكراً لزيارتكم! بالهناء والشفاء ✨' : 'Thank you for shopping with us! ✨'}</p>
-            <p>{language === 'ar' ? 'متجر خليل' : 'Khalil Store'}</p>
+            <p>{language === 'ar' ? 'متجر غاما' : 'Gamma Store'}</p>
           </div>
         </div>
 

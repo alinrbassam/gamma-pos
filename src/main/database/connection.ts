@@ -16,7 +16,7 @@ export class DatabaseConnection {
     if (!fs.existsSync(dbDir)) {
       fs.mkdirSync(dbDir, { recursive: true });
     }
-    this.dbPath = path.join(dbDir, 'zabad.db');
+    this.dbPath = path.join(dbDir, 'gamma.db');
 
     logger.info('DatabaseConnection', `Connecting to SQLite database at: ${this.dbPath}`);
     this.rawDb = new Database(this.dbPath);

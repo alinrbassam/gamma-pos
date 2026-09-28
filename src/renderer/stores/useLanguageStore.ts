@@ -21,7 +21,7 @@ interface LanguageState {
 
 const getInitialLanguage = (): LanguageCode => {
   try {
-    const saved = localStorage.getItem('zabad_language') as LanguageCode | null;
+    const saved = localStorage.getItem('gamma_language') as LanguageCode | null;
     if (saved && (saved === 'fr' || saved === 'en' || saved === 'ar')) {
       return saved;
     }
@@ -48,7 +48,7 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
       document.documentElement.setAttribute('lang', lang);
     }
     try {
-      localStorage.setItem('zabad_language', lang);
+      localStorage.setItem('gamma_language', lang);
     } catch {
       // ignore
     }

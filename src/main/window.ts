@@ -13,7 +13,7 @@ export function createMainWindow(): BrowserWindow {
   const icon = fs.existsSync(iconPath) ? iconPath : undefined;
 
   const mainWindow = new BrowserWindow({
-    title: 'نظام خليل - Khalil POS',
+    title: 'نظام غاما - Gamma POS',
     icon,
     width: 1280,
     height: 800,

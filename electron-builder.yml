@@ -1,6 +1,6 @@
-appId: com.zabad.pos
-productName: Khalil POS
-copyright: Copyright © 2026 Khalil Retail Systems
+appId: com.gamma.pos
+productName: Gamma POS
+copyright: Copyright © 2026 Gamma Retail Systems
 directories:
   output: dist-release
 files:
@@ -10,12 +10,13 @@ files:
 publish:
   provider: github
   owner: alinrbassam
-  repo: Zabad
+  repo: Gamma-POS
   releaseType: release
 
 win:
   icon: build/icon.ico
   forceCodeSigning: false
+  artifactName: "Gamma POS Setup ${version}.${ext}"
   target:
     - target: nsis
       arch:
@@ -29,9 +30,9 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: Khalil POS
-  uninstallDisplayName: Khalil POS
+  shortcutName: Gamma POS
+  uninstallDisplayName: Gamma POS
 
 extraMetadata:
   main: dist/main/index.js
-  author: Zabad Retail Systems
+  author: Gamma Retail Systems

@@ -1,5 +1,5 @@
 /**
- * Date formatting utilities for Zabad POS.
+ * Date formatting utilities for Gamma POS.
  * Formats all user-facing dates as DD-MM-YYYY.
  */
 

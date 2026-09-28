@@ -12,14 +12,14 @@ export const Step1Welcome: React.FC = () => {
   return (
     <div className="space-y-6 text-center">
       <div className="mx-auto h-16 w-16 bg-gradient-to-tr from-sky-500 via-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-cyan-500/25">
-        🐟
+        🏪
       </div>
       <div>
         <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100">
-          {language === 'ar' ? 'مرحباً بك في نظام زَبَد' : 'Welcome to Zabad POS'}
+          {language === 'ar' ? 'مرحباً بك في نظام غاما' : 'Welcome to Gamma POS'}
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          {language === 'ar' ? 'نظام إدارة مبيعات ومخزون الأسماك الطازجة' : 'Fresh Seafood Retail & Inventory System'}
+          {language === 'ar' ? 'نظام إدارة نقاط البيع والمخزون' : 'Retail POS & Inventory Management System'}
         </p>
       </div>
 

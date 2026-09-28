@@ -55,9 +55,9 @@ export function registerCommercialIpcHandlers(db: Database.Database): void {
   ipcMain.handle(IPC_CHANNELS.LICENSING_SELECT_FILE, async (): Promise<ApiResponse<string | null>> => {
     try {
       const { canceled, filePaths } = await dialog.showOpenDialog({
-        title: 'Sélectionner le fichier de licence Zabad (.zabad)',
+        title: 'Sélectionner le fichier de licence Gamma (.gamma)',
         filters: [
-          { name: 'Licence Zabad (*.zabad)', extensions: ['zabad'] },
+          { name: 'Licence Gamma (*.gamma, *.zabad)', extensions: ['gamma', 'zabad'] },
           { name: 'Fichiers JSON (*.json, *.rms)', extensions: ['json', 'rms'] },
           { name: 'Tous les fichiers', extensions: ['*'] },
         ],

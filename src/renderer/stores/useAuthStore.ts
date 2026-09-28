@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { UserEntity, RoleEntity } from '@shared/types';
 
-export const MASTER_RECOVERY_KEYS = ['998822', 'zabad-secret-key-2026'];
+export const MASTER_RECOVERY_KEYS = ['998822', 'gamma-secret-key-2026', 'zabad-secret-key-2026'];
 export const DEFAULT_MANAGER_PASSWORD = '1234';
 
 const defaultCashierUser: UserEntity = {
@@ -72,7 +72,7 @@ export const MANAGER_PERMISSIONS = [
 
 export const useAuthStore = create<AuthState>((set, get) => {
   const initialRoleMode =
-    typeof window !== 'undefined' && sessionStorage.getItem('zabad_role_mode') === 'manager'
+    typeof window !== 'undefined' && sessionStorage.getItem('gamma_role_mode') === 'manager'
       ? 'manager'
       : 'cashier';
 
@@ -87,11 +87,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
     inactivityTimeoutMinutes: 30,
     activeRoleMode: initialRoleMode,
     isManagerUnlockModalOpen: false,
-    managerPassword: localStorage.getItem('zabad_manager_password') || DEFAULT_MANAGER_PASSWORD,
+    managerPassword: localStorage.getItem('gamma_manager_password') || DEFAULT_MANAGER_PASSWORD,
 
     setRoleMode: (mode: 'cashier' | 'manager') => {
-      sessionStorage.setItem('zabad_role_mode', mode);
-      localStorage.removeItem('zabad_role_mode'); // Clear any legacy persisted role
+      sessionStorage.setItem('gamma_role_mode', mode);
+      localStorage.removeItem('gamma_role_mode'); // Clear any legacy persisted role
       set({
         activeRoleMode: mode,
         permissions: mode === 'manager' ? MANAGER_PERMISSIONS : CASHIER_PERMISSIONS,
@@ -108,7 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const res = await window.api.getSectionSettings('security');
         if (res.success && res.data && res.data.manager_password) {
           const pass = res.data.manager_password;
-          localStorage.setItem('zabad_manager_password', pass);
+          localStorage.setItem('gamma_manager_password', pass);
           set({ managerPassword: pass });
           return pass;
         }
@@ -125,12 +125,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
       if (window.api?.updateSectionSettings) {
         await window.api.updateSectionSettings('security', { manager_password: newPassword });
       }
-      localStorage.setItem('zabad_manager_password', newPassword);
+      localStorage.setItem('gamma_manager_password', newPassword);
       set({ managerPassword: newPassword });
       return true;
     } catch (err) {
       console.error('Failed to update manager password in SQLite', err);
-      localStorage.setItem('zabad_manager_password', newPassword);
+      localStorage.setItem('gamma_manager_password', newPassword);
       set({ managerPassword: newPassword });
       return true;
     }
@@ -176,8 +176,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
   },
 
   logout: async () => {
-    sessionStorage.removeItem('zabad_role_mode');
-    localStorage.removeItem('zabad_role_mode');
+    sessionStorage.removeItem('gamma_role_mode');
+    localStorage.removeItem('gamma_role_mode');
     set({
       activeRoleMode: 'cashier',
       permissions: CASHIER_PERMISSIONS,
@@ -187,8 +187,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
   },
 
   checkSession: async () => {
-    sessionStorage.removeItem('zabad_role_mode');
-    localStorage.removeItem('zabad_role_mode');
+    sessionStorage.removeItem('gamma_role_mode');
+    localStorage.removeItem('gamma_role_mode');
     set({ activeRoleMode: 'cashier' });
     get().loadManagerPassword().catch(() => {});
 

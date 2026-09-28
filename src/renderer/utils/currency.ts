@@ -1,5 +1,5 @@
 /**
- * Currency formatting utilities for Zabad POS.
+ * Currency formatting utilities for Gamma POS.
  * Formats all user-facing monetary amounts in CFA Francs (FCFA).
  */
 

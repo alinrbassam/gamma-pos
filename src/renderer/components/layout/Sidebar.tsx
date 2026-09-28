@@ -29,7 +29,7 @@ export const Sidebar: React.FC = () => {
   const { logout, user, activeRoleMode, setRoleMode, setManagerUnlockModalOpen } = useAuthStore();
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem('zabad_sidebar_collapsed');
+      const saved = localStorage.getItem('gamma_sidebar_collapsed');
       if (saved !== null) return saved === 'true';
       return typeof window !== 'undefined' && window.innerWidth <= 1280;
     } catch {
@@ -41,7 +41,7 @@ export const Sidebar: React.FC = () => {
     setIsCollapsed((prev) => {
       const next = !prev;
       try {
-        localStorage.setItem('zabad_sidebar_collapsed', String(next));
+        localStorage.setItem('gamma_sidebar_collapsed', String(next));
       } catch {
         // fallback
       }
@@ -239,12 +239,12 @@ export const Sidebar: React.FC = () => {
       >
         <div className="flex items-center space-x-2.5 rtl:space-x-reverse min-w-0">
           <div className="h-9 w-9 bg-gradient-to-tr from-sky-500 via-cyan-500 to-blue-600 rounded-xl flex items-center justify-center font-black text-white text-base shadow-md shadow-cyan-500/25 shrink-0">
-            K
+            G
           </div>
           {!isCollapsed && (
             <div className="min-w-0 truncate">
               <h2 className="text-sm font-black text-white tracking-wide flex items-center space-x-1 rtl:space-x-reverse">
-                <span>{language === 'ar' ? 'نظام خليل' : 'Khalil POS'}</span>
+                <span>{language === 'ar' ? 'نظام غاما' : 'Gamma POS'}</span>
                 <span className="text-[9px] bg-cyan-500/20 text-cyan-400 font-mono px-1 py-0.2 rounded">v2</span>
               </h2>
               <span className="text-[10px] text-cyan-400/90 font-medium truncate block">

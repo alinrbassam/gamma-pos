@@ -13,7 +13,7 @@ interface ZoomState {
 
 function getInitialZoom(): number {
   try {
-    const saved = localStorage.getItem('zabad_pos_zoom');
+    const saved = localStorage.getItem('gamma_pos_zoom');
     if (saved) {
       const parsed = parseInt(saved, 10);
       if (!isNaN(parsed) && ZOOM_LEVELS.includes(parsed)) {
@@ -49,7 +49,7 @@ function applyZoomToSystem(percent: number) {
     }
   }
   try {
-    localStorage.setItem('zabad_pos_zoom', String(percent));
+    localStorage.setItem('gamma_pos_zoom', String(percent));
   } catch {
     // fallback
   }

@@ -186,7 +186,7 @@ export const App: React.FC = () => {
       <div className="flex h-screen items-center justify-center bg-slate-900 text-white font-sans">
         <div className="flex flex-col items-center space-y-4">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
-          <p className="text-sm font-semibold tracking-wide">Initializing Zabad System...</p>
+          <p className="text-sm font-semibold tracking-wide">Initializing Gamma System...</p>
         </div>
       </div>
     );

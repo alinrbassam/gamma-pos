@@ -43,7 +43,7 @@ describe('SupabaseSyncService Configuration & Roles', () => {
         }
         if (sql.includes('businesses')) {
           return {
-            get: () => ({ id: 'biz_default', name: 'Khalil Test Store', currency: 'USD' }),
+            get: () => ({ id: 'biz_default', name: 'Gamma Test Store', currency: 'USD' }),
           };
         }
         return {
@@ -82,7 +82,7 @@ describe('SupabaseSyncService Configuration & Roles', () => {
 
   it('should persist and retrieve remote store metadata', () => {
     const mockMeta = {
-      storeName: 'Khalil Test Store',
+      storeName: 'Gamma Test Store',
       currency: 'USD',
       orderCountToday: 25,
       revenueToday: 1500,
@@ -100,7 +100,7 @@ describe('SupabaseSyncService Configuration & Roles', () => {
 
     const config = service.getConfig();
     expect(config.remoteMeta).not.toBeNull();
-    expect(config.remoteMeta?.storeName).toBe('Khalil Test Store');
+    expect(config.remoteMeta?.storeName).toBe('Gamma Test Store');
     expect(config.remoteMeta?.orderCountToday).toBe(25);
     expect(config.lastStatus).toBe('success');
   });

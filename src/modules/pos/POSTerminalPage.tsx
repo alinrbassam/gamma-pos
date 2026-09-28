@@ -694,7 +694,7 @@ export const POSTerminalPage: React.FC = () => {
         isOpen={Boolean(lastCompletedSale)}
         onClose={() => setLastCompletedSale(null)}
         sale={lastCompletedSale}
-        businessName={language === 'ar' ? 'متجر خليل' : 'Khalil Store'}
+        businessName={language === 'ar' ? 'متجر غاما' : 'Gamma Store'}
         businessAddress={language === 'ar' ? 'السوق المركزي' : 'Central Market'}
       />
     </div>

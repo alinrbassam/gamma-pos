@@ -10,7 +10,7 @@ import {
   Check,
   Upload,
   Globe,
-  Fish,
+  Store,
   AlertCircle,
   KeyRound,
   ChevronDown,
@@ -111,11 +111,11 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({ onActivated 
       <div className="flex items-center justify-between max-w-4xl w-full mx-auto pb-4 border-b border-slate-800">
         <div className="flex items-center space-x-3 rtl:space-x-reverse">
           <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-sky-600 to-cyan-400 p-2 text-white flex items-center justify-center shadow-lg shadow-sky-500/20">
-            <Fish className="h-6 w-6" />
+            <Store className="h-6 w-6" />
           </div>
           <div>
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
-              <span className="font-black text-lg text-white tracking-wide">ZABAD POS</span>
+              <span className="font-black text-lg text-white tracking-wide">GAMMA POS</span>
               <span className="text-[10px] uppercase tracking-wider font-bold bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/30">
                 v2.0
               </span>
@@ -290,7 +290,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({ onActivated 
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileInputChange}
-                    accept=".zabad,.json,.rms"
+                    accept=".gamma,.zabad,.json,.rms"
                     className="hidden"
                   />
                   <button
@@ -299,7 +299,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({ onActivated 
                     className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium flex items-center justify-center space-x-2 rtl:space-x-reverse transition-colors"
                   >
                     <Upload className="h-3.5 w-3.5" />
-                    <span>Importer fichier .zabad (optionnel)</span>
+                    <span>Importer fichier licence (.gamma)</span>
                   </button>
                 </div>
               </div>
@@ -310,7 +310,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({ onActivated 
 
       {/* Footer Info */}
       <div className="text-center text-[11px] text-slate-500 max-w-md mx-auto pt-2">
-        <span>Zabad POS • Commercial Edition • Single Device License</span>
+        <span>Gamma POS • Commercial Edition • Single Device License</span>
       </div>
     </div>
   );

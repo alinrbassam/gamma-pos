@@ -192,7 +192,7 @@ export class SupabaseSyncService {
 
       // 2. Gather store stats
       const biz = this.businessRepo.getActiveBusiness();
-      const storeName = biz?.name || 'Khalil POS';
+      const storeName = biz?.name || 'Gamma POS';
       const currency = biz?.currency || 'USD';
       const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -235,7 +235,7 @@ export class SupabaseSyncService {
 
       // 3. Upload database file to Supabase Storage
       const dbBuffer = fs.readFileSync(tempDbPath);
-      const dbUploadUrl = `${config.supabaseUrl}/storage/v1/object/${BUCKET_NAME}/khalil_store.db`;
+      const dbUploadUrl = `${config.supabaseUrl}/storage/v1/object/${BUCKET_NAME}/gamma_store.db`;
 
       const dbRes = await fetch(dbUploadUrl, {
         method: 'POST',
@@ -324,7 +324,7 @@ export class SupabaseSyncService {
       const meta = await this.fetchRemoteMeta();
 
       // 2. Download database file
-      const dbDownloadUrl = `${config.supabaseUrl}/storage/v1/object/${BUCKET_NAME}/khalil_store.db`;
+      const dbDownloadUrl = `${config.supabaseUrl}/storage/v1/object/${BUCKET_NAME}/gamma_store.db`;
       const response = await fetch(dbDownloadUrl, {
         headers: {
           apikey: config.supabaseKey,
@@ -524,7 +524,7 @@ export class SupabaseSyncService {
 
   /**
    * Direct Unified Cloud Sync:
-   * 1. Downloads the latest master cloud database (khalil_store.db).
+   * 1. Downloads the latest master cloud database (gamma_store.db).
    * 2. Merges all cloud tables (suppliers, products, purchases, sales, customers, debt) into local SQLite.
    * 3. Uploads the merged state back to Supabase Storage.
    * 4. Updates sync_meta.json.
@@ -561,7 +561,7 @@ export class SupabaseSyncService {
       logger.info('SupabaseSync', 'Starting Direct Unified Cloud Sync...');
 
       // 1. Download latest cloud DB
-      const dbDownloadUrl = `${config.supabaseUrl}/storage/v1/object/${BUCKET_NAME}/khalil_store.db`;
+      const dbDownloadUrl = `${config.supabaseUrl}/storage/v1/object/${BUCKET_NAME}/gamma_store.db`;
       const response = await fetch(dbDownloadUrl, {
         headers: {
           apikey: config.supabaseKey,

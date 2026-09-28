@@ -87,5 +87,7 @@ Thumbs.db
 # Licensing Secrets
 crypto-keys/private.key
 *.zabad
+*.gamma
+*.lic
 
 

@@ -49,7 +49,7 @@ export const UpdateSettings: React.FC = () => {
           Mises à jour logicielles / Application Updates
         </h2>
         <p className="text-xs text-slate-500">
-          Mettez à jour Khalil POS directement en 1 clic sans interruption des ventes et sans quitter l'application.
+          Mettez à jour Gamma POS directement en 1 clic sans interruption des ventes et sans quitter l'application.
         </p>
       </div>
 

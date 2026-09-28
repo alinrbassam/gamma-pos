@@ -50,7 +50,7 @@ export class UpdaterService {
             releaseNotes: typeof result.updateInfo.releaseNotes === 'string'
               ? result.updateInfo.releaseNotes
               : 'New version available with improvements and fixes.',
-            downloadUrl: `https://github.com/alinrbassam/Zabad/releases/tag/v${latestVersion}`,
+            downloadUrl: `https://github.com/alinrbassam/Gamma-POS/releases/tag/v${latestVersion}`,
             isPackaged: true,
           };
         }
@@ -61,10 +61,10 @@ export class UpdaterService {
 
     // Direct GitHub Releases fallback (works in dev & production)
     try {
-      const response = await fetch('https://api.github.com/repos/alinrbassam/Zabad/releases/latest', {
+      const response = await fetch('https://api.github.com/repos/alinrbassam/Gamma-POS/releases/latest', {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Zabad-POS-Updater',
+          'User-Agent': 'Gamma-POS-Updater',
         },
       });
 
@@ -92,7 +92,7 @@ export class UpdaterService {
         currentVersion,
         latestVersion: cleanLatest,
         releaseNotes: release.body || 'New features and bug fixes.',
-        downloadUrl: release.html_url || `https://github.com/alinrbassam/Zabad/releases/tag/${latestTag}`,
+        downloadUrl: release.html_url || `https://github.com/alinrbassam/Gamma-POS/releases/tag/${latestTag}`,
         isPackaged,
       };
     } catch (err: any) {

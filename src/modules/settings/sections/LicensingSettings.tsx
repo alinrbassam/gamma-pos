@@ -105,10 +105,10 @@ export const LicensingSettings: React.FC = () => {
         </h2>
         <p className="text-xs text-slate-500">
           {language === 'ar'
-            ? 'إدارة ترخيص النظام، بصمة الجهاز، واستيراد ملفات الترخيص المعتمدة (.zabad)'
+            ? 'إدارة ترخيص النظام، بصمة الجهاز، واستيراد ملفات الترخيص المعتمدة (.gamma)'
             : language === 'fr'
-            ? 'Gérer la licence de l’appareil, la signature cryptographique et l’import de fichiers .zabad'
-            : 'Manage device hardware binding, cryptographic verification, and import .zabad license files'}
+            ? 'Gérer la licence de l’appareil, la signature cryptographique et l’import de fichiers .gamma'
+            : 'Manage device hardware binding, cryptographic verification, and import .gamma license files'}
         </p>
       </div>
 
@@ -233,10 +233,10 @@ export const LicensingSettings: React.FC = () => {
             </p>
             <p>
               {language === 'ar'
-                ? 'استورد ملف الترخيص (.zabad) لتفعيل النظام على هذا الجهاز.'
+                ? 'استورد ملف الترخيص (.gamma) لتفعيل النظام على هذا الجهاز.'
                 : language === 'fr'
-                ? 'Importez un fichier de licence (.zabad) pour activer le système sur cet appareil.'
-                : 'Import a .zabad license file to activate the software on this PC.'}
+                ? 'Importez un fichier de licence (.gamma) pour activer le système sur cet appareil.'
+                : 'Import a .gamma license file to activate the software on this PC.'}
             </p>
           </div>
         )}
@@ -245,10 +245,10 @@ export const LicensingSettings: React.FC = () => {
       <Card
         title={
           language === 'ar'
-            ? '3. استيراد ملف ترخيص معتمد (.zabad)'
+            ? '3. استيراد ملف ترخيص معتمد (.gamma)'
             : language === 'fr'
-            ? '3. Importer un Fichier de Licence (.zabad)'
-            : '3. Import Signed License File (.zabad)'
+            ? '3. Importer un Fichier de Licence (.gamma)'
+            : '3. Import Signed License File (.gamma)'
         }
       >
         <div className="space-y-4">
@@ -256,7 +256,7 @@ export const LicensingSettings: React.FC = () => {
             type="file"
             ref={fileInputRef}
             onChange={handleFileInputChange}
-            accept=".zabad,.json,.rms"
+            accept=".gamma,.zabad,.json,.rms"
             className="hidden"
           />
 
@@ -269,10 +269,10 @@ export const LicensingSettings: React.FC = () => {
             <Upload className="h-4 w-4" />
             <span>
               {language === 'ar'
-                ? '📁 اختيار واستيراد ملف الترخيص (.zabad)'
+                ? '📁 اختيار واستيراد ملف الترخيص (.gamma)'
                 : language === 'fr'
-                ? '📁 Choisir & Importer le Fichier (.zabad)'
-                : '📁 Select & Import License File (.zabad)'}
+                ? '📁 Choisir & Importer le Fichier (.gamma)'
+                : '📁 Select & Import License File (.gamma)'}
             </span>
           </Button>
 
@@ -289,7 +289,7 @@ export const LicensingSettings: React.FC = () => {
                 rows={3}
                 value={licenseText}
                 onChange={(e) => setLicenseText(e.target.value)}
-                placeholder='{"app":"Zabad POS","license":{...},"signature":"..."}'
+                placeholder='{"app":"Gamma POS","license":{...},"signature":"..."}'
                 className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500"
               />
               <div className="flex justify-end">

@@ -19,17 +19,17 @@ import { SupabaseSyncService } from './services/supabase-sync.service';
 
 import { IPC_CHANNELS } from '../shared/ipc/channels';
 
-app.setName('Zabad POS');
+app.setName('Gamma POS');
 try {
   app.commandLine.appendSwitch('lang', 'fr-FR');
   const appData = app.getPath('appData');
-  app.setPath('userData', path.join(appData, 'Zabad POS'));
+  app.setPath('userData', path.join(appData, 'Gamma POS'));
 } catch {
   // non-electron or test runner fallback
 }
 
 app.whenReady().then(() => {
-  logger.info('App', 'Starting Zabad POS Seafood Desktop Application');
+  logger.info('App', 'Starting Gamma POS Desktop Application');
 
   try {
     const db = DatabaseConnection.getInstance().getDatabase();
@@ -109,7 +109,7 @@ app.whenReady().then(() => {
         .showMessageBox({
           type: 'info',
           title: 'Mise à jour prête / Update Ready',
-          message: `Une nouvelle version (${info.version}) de Zabad POS a été téléchargée avec succès.`,
+          message: `Une nouvelle version (${info.version}) de Gamma POS a été téléchargée avec succès.`,
           detail: 'Voulez-vous redémarrer l’application maintenant pour appliquer la mise à jour ?',
           buttons: ['Redémarrer maintenant', 'Plus tard'],
           defaultId: 0,
