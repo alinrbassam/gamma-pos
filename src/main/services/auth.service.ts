@@ -40,6 +40,54 @@ export class AuthService {
     return biz !== null;
   }
 
+  public ensureDefaultSetup(): void {
+    if (this.isSetupComplete()) {
+      return;
+    }
+
+    logger.info('AuthService', 'Auto-initializing default store configuration for Gamma POS');
+    try {
+      this.completeSetupWizard({
+        language: 'ar',
+        theme: 'light',
+        businessName: 'متجر غاما',
+        businessType: 'General Retail',
+        ownerName: 'مدير النظام',
+        phone: '00000000',
+        email: '',
+        currency: 'FCFA',
+        timezone: 'UTC',
+        dateFormat: 'DD-MM-YYYY',
+        timeFormat: '24h',
+        taxEnabled: false,
+        taxRate: 0,
+        pricesIncludeTax: false,
+        receiptWidth: '80mm',
+        receiptLanguage: 'ar',
+        showReceiptLogo: false,
+        showReceiptAddress: true,
+        showReceiptPhone: true,
+        showReceiptTaxNumber: false,
+        showCashierName: true,
+        receiptFooterMessage: 'شكراً لزيارتكم! بالهناء والشفاء ✨',
+        returnPolicy: '',
+        autoPrintReceipt: true,
+        saveReceiptAsPdf: false,
+        autoBackupEnabled: false,
+        backupFrequency: 'daily',
+        backupRetentionCount: 7,
+        backupCompressionEnabled: true,
+        backupEncryptionEnabled: false,
+        ownerUsername: 'admin',
+        ownerPassword: 'Password123!',
+        securityQuestion: 'اسم المتجر؟',
+        securityAnswer: 'غاما',
+      });
+    } catch (err) {
+      logger.error('AuthService', 'Failed auto-initializing default setup', err);
+    }
+  }
+
   public completeSetupWizard(payload: SetupWizardPayloadInput): LoginResult {
     if (this.isSetupComplete()) {
       throw new Error('System setup has already been completed.');

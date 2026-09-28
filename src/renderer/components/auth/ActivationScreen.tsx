@@ -117,7 +117,7 @@ export const ActivationScreen: React.FC<ActivationScreenProps> = ({ onActivated 
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
               <span className="font-black text-lg text-white tracking-wide">GAMMA POS</span>
               <span className="text-[10px] uppercase tracking-wider font-bold bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/30">
-                v2.0
+                v1.0
               </span>
             </div>
             <p className="text-[11px] text-slate-400">

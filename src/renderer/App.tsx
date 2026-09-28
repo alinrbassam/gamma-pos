@@ -96,7 +96,6 @@ export const App: React.FC = () => {
   const { checkSession, activeRoleMode } = useAuthStore();
   const { loadConfig } = useConfigStore();
   const { theme } = useThemeStore();
-  const [isSetupComplete, setIsSetupComplete] = useState<boolean | null>(null);
   const [isLicenseValid, setIsLicenseValid] = useState<boolean | null>(null);
 
   const checkLicense = useCallback(async () => {
@@ -130,7 +129,6 @@ export const App: React.FC = () => {
     }
 
     if (import.meta.env.DEV) {
-      setIsSetupComplete(true);
       useAuthStore.setState({
         isAuthenticated: true,
         isScreenLocked: false,
@@ -143,28 +141,6 @@ export const App: React.FC = () => {
     }
 
     checkSession();
-
-    if (window.api?.checkSetup) {
-      window.api
-        .checkSetup()
-        .then((res) => {
-          if (res.success && res.data) {
-            setIsSetupComplete(res.data.isSetupComplete);
-          } else {
-            setIsSetupComplete(false);
-          }
-        })
-        .catch((err) => {
-          if (window.api?.writeLog) {
-            window.api.writeLog('error', 'App-CheckSetup', (err as Error).message, {
-              stack: (err as Error).stack,
-            });
-          }
-          setIsSetupComplete(false);
-        });
-    } else {
-      setIsSetupComplete(true);
-    }
 
     return () => {
       cleanupUpdater();
@@ -181,7 +157,7 @@ export const App: React.FC = () => {
     }
   }, [theme]);
 
-  if (isLicenseValid === null || isSetupComplete === null) {
+  if (isLicenseValid === null) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-900 text-white font-sans">
         <div className="flex flex-col items-center space-y-4">
@@ -196,43 +172,38 @@ export const App: React.FC = () => {
     return <ActivationScreen onActivated={checkLicense} />;
   }
 
-  const SetupPage = SetupWizardModule.routes[0].component;
   const allRoutes = moduleRegistry.getAllRoutes();
 
   return (
     <HashRouter>
-      {!isSetupComplete ? (
-        <SetupPage />
-      ) : (
-        <NavigationLayout>
-          <ManagerPasswordModal />
-          <Routes>
-            <Route
-              path="/"
-              element={activeRoleMode === 'cashier' ? <Navigate to="/pos" replace /> : <DashboardPage />}
-            />
-            {allRoutes.map((r: RouteDefinition) => {
-              const isCashierAllowed = r.path === '/pos' || r.path === '/pos/debts';
-              return (
-                <Route
-                  key={r.path}
-                  path={r.path}
-                  element={
-                    isCashierAllowed ? (
+      <NavigationLayout>
+        <ManagerPasswordModal />
+        <Routes>
+          <Route
+            path="/"
+            element={activeRoleMode === 'cashier' ? <Navigate to="/pos" replace /> : <DashboardPage />}
+          />
+          {allRoutes.map((r: RouteDefinition) => {
+            const isCashierAllowed = r.path === '/pos' || r.path === '/pos/debts';
+            return (
+              <Route
+                key={r.path}
+                path={r.path}
+                element={
+                  isCashierAllowed ? (
+                    <r.component />
+                  ) : (
+                    <ManagerRouteGuard>
                       <r.component />
-                    ) : (
-                      <ManagerRouteGuard>
-                        <r.component />
-                      </ManagerRouteGuard>
-                    )
-                  }
-                />
-              );
-            })}
-            <Route path="*" element={<Navigate to={activeRoleMode === 'cashier' ? '/pos' : '/'} replace />} />
-          </Routes>
-        </NavigationLayout>
-      )}
+                    </ManagerRouteGuard>
+                  )
+                }
+              />
+            );
+          })}
+          <Route path="*" element={<Navigate to={activeRoleMode === 'cashier' ? '/pos' : '/'} replace />} />
+        </Routes>
+      </NavigationLayout>
     </HashRouter>
   );
 };

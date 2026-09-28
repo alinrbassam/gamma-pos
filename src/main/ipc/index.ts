@@ -29,6 +29,7 @@ export function registerIpcHandlers(): void {
   const db = DatabaseConnection.getInstance().getDatabase();
   const configService = ConfigService.getInstance();
   const authService = new AuthService(db);
+  authService.ensureDefaultSetup();
   const userService = new UserService(db);
   const settingsService = new SettingsService(db);
   const auditRepo = new AuditRepository(db);

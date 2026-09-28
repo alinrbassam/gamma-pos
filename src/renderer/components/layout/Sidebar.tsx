@@ -245,7 +245,7 @@ export const Sidebar: React.FC = () => {
             <div className="min-w-0 truncate">
               <h2 className="text-sm font-black text-white tracking-wide flex items-center space-x-1 rtl:space-x-reverse">
                 <span>{language === 'ar' ? 'نظام غاما' : 'Gamma POS'}</span>
-                <span className="text-[9px] bg-cyan-500/20 text-cyan-400 font-mono px-1 py-0.2 rounded">v2</span>
+                <span className="text-[9px] bg-cyan-500/20 text-cyan-400 font-mono px-1 py-0.2 rounded">v1.0</span>
               </h2>
               <span className="text-[10px] text-cyan-400/90 font-medium truncate block">
                 {activeRoleMode === 'cashier'
