@@ -258,9 +258,9 @@ export const Sidebar: React.FC = () => {
           {!isCollapsed && (
             <div className="min-w-0 truncate">
               <h2 className="text-sm font-black text-white tracking-wider flex items-center space-x-1 rtl:space-x-reverse">
-                <span>{language === 'ar' ? 'غاما كافيه' : 'GAMMA'}</span>
+                <span>{language === 'ar' ? 'ابن خالتي' : 'Eben Khalti'}</span>
                 <span className="text-[9px] bg-[#C83818]/25 text-[#E25534] border border-[#C83818]/40 font-mono px-1 py-0.2 rounded font-bold">
-                  v1.0
+                  v1.0.1
                 </span>
               </h2>
               <span className="text-[10px] text-slate-400 font-medium truncate block tracking-widest uppercase">
