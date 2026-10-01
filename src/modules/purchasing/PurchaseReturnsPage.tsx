@@ -171,7 +171,7 @@ export const PurchaseReturnsPage: React.FC = () => {
               required
             />
             <Input
-              label="Unit Cost (FCFA) *"
+              label="Unit Cost ($ USD) *"
               type="number"
               step="any"
               value={unitCost}

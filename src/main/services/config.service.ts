@@ -8,9 +8,9 @@ import { logger } from './logger.service';
 const defaultConfig: AppConfig = {
   theme: 'system',
   language: 'en',
-  currency: 'FCFA',
-  businessName: 'My Enterprise Store',
-  businessType: 'Supermarket',
+  currency: 'USD',
+  businessName: 'Delish Cafe & Lounge',
+  businessType: 'Cafeteria & Gaming Lounge',
   taxRate: 15.0,
   taxNumber: '',
   address: '',

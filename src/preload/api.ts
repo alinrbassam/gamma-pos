@@ -155,6 +155,39 @@ const IPC_CHANNELS = {
   SUPABASE_SYNC_NOW: 'supabase_sync:sync_now',
   SUPABASE_SYNC_GET_REMOTE_META: 'supabase_sync:get_remote_meta',
   SUPABASE_SYNC_EVENT: 'supabase_sync:event',
+
+  // Rates & Exchange
+  RATES_GET: 'rates:get',
+  RATES_UPDATE: 'rates:update',
+
+  // PlayStation Lounge
+  PLAYSTATION_GET_STATE: 'playstation:get_state',
+  PLAYSTATION_START_SESSION: 'playstation:start_session',
+  PLAYSTATION_STOP_SESSION: 'playstation:stop_session',
+  PLAYSTATION_ADD_ITEM: 'playstation:add_item',
+  PLAYSTATION_REMOVE_ITEM: 'playstation:remove_item',
+  PLAYSTATION_CHECKOUT: 'playstation:checkout',
+  PLAYSTATION_SEND_TO_TABLE: 'playstation:send_to_table',
+
+  // Dine-In Tables & Running Tabs
+  TABLES_GET_STATE: 'tables:get_state',
+  TABLES_CREATE: 'tables:create',
+  TABLES_UPDATE: 'tables:update',
+  TABLES_DELETE: 'tables:delete',
+  TABLES_OPEN_TAB: 'tables:open_tab',
+  TABLES_ADD_ITEM: 'tables:add_item',
+  TABLES_UPDATE_ITEM_QTY: 'tables:update_item_qty',
+  TABLES_REMOVE_ITEM: 'tables:remove_item',
+  TABLES_TRANSFER: 'tables:transfer',
+  TABLES_MERGE: 'tables:merge',
+  TABLES_TRANSFER_TO_PLAYSTATION: 'tables:transfer_to_playstation',
+  TABLES_CHECKOUT: 'tables:checkout',
+  TABLES_CUSTOMER_LOOKUP: 'tables:customer_lookup',
+
+  // Hookah Lounge
+  HOOKAH_GET_FLAVORS: 'hookah:get_flavors',
+  HOOKAH_SAVE_FLAVOR: 'hookah:save_flavor',
+  HOOKAH_DELETE_FLAVOR: 'hookah:delete_flavor',
 } as const;
 import {
   ApiResponse,
@@ -170,6 +203,7 @@ import {
   SupplierEntity,
   InventoryMovementEntity,
   BatchEntity,
+  HookahFlavorEntity,
   PurchaseOrderEntity,
   PurchaseOrderItemEntity,
   GoodsReceiptEntity,
@@ -618,6 +652,147 @@ export const api = {
     ipcRenderer.on(IPC_CHANNELS.SUPABASE_SYNC_EVENT, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.SUPABASE_SYNC_EVENT, handler);
   },
+
+  // Rates & Exchange
+  getRates: (): Promise<ApiResponse<{ usdToLbpRate: number; ratePerPlayerHourLbp: number }>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.RATES_GET),
+  updateRates: (payload: {
+    usdToLbpRate?: number;
+    ratePerPlayerHourLbp?: number;
+  }): Promise<ApiResponse<{ usdToLbpRate: number; ratePerPlayerHourLbp: number }>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.RATES_UPDATE, payload),
+
+  // PlayStation Lounge
+  getPlaystationState: (): Promise<
+    ApiResponse<{
+      stations: any[];
+      activeSessions: any[];
+      rates: { usdToLbpRate: number; ratePerPlayerHourLbp: number };
+    }>
+  > => ipcRenderer.invoke(IPC_CHANNELS.PLAYSTATION_GET_STATE),
+  startPlaystationSession: (payload: {
+    stationId: string;
+    playersCount: number;
+    customHourlyRateLbp?: number;
+    notes?: string;
+  }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLAYSTATION_START_SESSION, payload),
+  stopPlaystationSession: (sessionId: string): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLAYSTATION_STOP_SESSION, sessionId),
+  addPlaystationItem: (payload: {
+    sessionId: string;
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPriceUsd: number;
+  }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLAYSTATION_ADD_ITEM, payload),
+  removePlaystationItem: (itemId: string): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLAYSTATION_REMOVE_ITEM, itemId),
+  checkoutPlaystationSession: (payload: {
+    sessionId: string;
+    paidUsd: number;
+    paidLbp: number;
+    changeUsd: number;
+    changeLbp: number;
+  }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLAYSTATION_CHECKOUT, payload),
+
+  // Dine-In Tables & Running Tabs
+  getTablesState: (): Promise<
+    ApiResponse<{
+      tablesWithTabs: Array<{
+        table: {
+          id: string;
+          name: string;
+          capacity: number;
+          display_order: number;
+          is_active: number;
+          created_at: string;
+        };
+        activeTab: {
+          id: string;
+          table_id: string;
+          table_name: string;
+          customer_name?: string | null;
+          customer_phone?: string | null;
+          opened_at: string;
+          closed_at?: string | null;
+          status: string;
+          notes?: string | null;
+          created_at: string;
+          updated_at: string;
+          items: Array<{
+            id: string;
+            tab_id: string;
+            product_id: string;
+            product_name: string;
+            quantity: number;
+            unit_price_usd: number;
+            line_total_usd: number;
+            notes?: string;
+          }>;
+          total_usd: number;
+          total_lbp: number;
+          elapsed_seconds: number;
+        } | null;
+      }>;
+      rates: { usdToLbpRate: number };
+    }>
+  > => ipcRenderer.invoke(IPC_CHANNELS.TABLES_GET_STATE),
+  createTable: (payload: { name: string; capacity?: number }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_CREATE, payload),
+  updateTable: (payload: { id: string; name: string; capacity?: number }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_UPDATE, payload),
+  deleteTable: (id: string): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_DELETE, id),
+  openTableTab: (payload: {
+    tableId: string;
+    customerName?: string;
+    customerPhone?: string;
+    notes?: string;
+  }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_OPEN_TAB, payload),
+  addTableItem: (payload: {
+    tabId: string;
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPriceUsd: number;
+    notes?: string;
+  }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_ADD_ITEM, payload),
+  updateTableItemQty: (payload: { itemId: string; quantity: number }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_UPDATE_ITEM_QTY, payload),
+  removeTableItem: (itemId: string): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_REMOVE_ITEM, itemId),
+  transferTable: (payload: { sourceTableId: string; targetTableId: string }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_TRANSFER, payload),
+  lookupCustomerByPhone: (phone: string): Promise<ApiResponse<{ found: boolean; name?: string; phone?: string }>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_CUSTOMER_LOOKUP, phone),
+  checkoutTableTab: (payload: any): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_CHECKOUT, payload),
+  mergeTables: (payload: { sourceTableId: string; targetTableId: string }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_MERGE, payload),
+  transferTableToPlaystation: (payload: {
+    tableId: string;
+    stationId: string;
+    playersCount?: number;
+  }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.TABLES_TRANSFER_TO_PLAYSTATION, payload),
+  sendPlaystationSessionToTable: (payload: {
+    sessionId: string;
+    tableId: string;
+  }): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.PLAYSTATION_SEND_TO_TABLE, payload),
+
+  // Hookah Lounge APIs
+  getHookahFlavors: (onlyActive?: boolean): Promise<ApiResponse<HookahFlavorEntity[]>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.HOOKAH_GET_FLAVORS, onlyActive),
+  saveHookahFlavor: (payload: Partial<HookahFlavorEntity>): Promise<ApiResponse<HookahFlavorEntity>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.HOOKAH_SAVE_FLAVOR, payload),
+  deleteHookahFlavor: (id: string): Promise<ApiResponse<any>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.HOOKAH_DELETE_FLAVOR, id),
 
   // Zoom controls
   setZoomFactor: (factor: number): void => {

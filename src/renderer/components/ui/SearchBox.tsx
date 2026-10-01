@@ -20,7 +20,7 @@ export const SearchBox: React.FC<SearchBoxProps> = ({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-9 pr-4 py-2 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+        className="w-full pl-9 pr-4 py-2 text-xs bg-slate-100 dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#C83818]/30 focus:border-[#C83818]"
       />
     </div>
   );

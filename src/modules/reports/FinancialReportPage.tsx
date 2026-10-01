@@ -4,30 +4,47 @@ import { useAuthStore } from '@stores/useAuthStore';
 import { Card } from '@components/ui/Card';
 import { Input } from '@components/ui/Input';
 import { Alert } from '@components/ui/Alert';
-import { Layers, ShieldAlert } from 'lucide-react';
+import { Button } from '@components/ui/Button';
+import { Layers, Lock } from 'lucide-react';
 import { formatCurrency } from '../../renderer/utils/currency';
 
 export const FinancialReportPage: React.FC = () => {
   const { startDate, endDate, setDateRange, financialMetrics, loadFinancialReport, error } =
     useReportsStore();
-  const { role } = useAuthStore();
+  const { role, activeRoleMode, setManagerUnlockModalOpen } = useAuthStore();
 
-  const isOwner = role?.name === 'Owner' || !role;
+  const isManagerOrOwner =
+    activeRoleMode === 'manager' ||
+    role?.name === 'Owner' ||
+    role?.name === 'Manager' ||
+    role?.name === 'admin' ||
+    role?.name === 'super_admin' ||
+    !role;
 
   useEffect(() => {
-    if (isOwner) {
-      loadFinancialReport(role?.name);
+    if (isManagerOrOwner) {
+      loadFinancialReport('Owner');
     }
-  }, [startDate, endDate, role, isOwner, loadFinancialReport]);
+  }, [startDate, endDate, role, activeRoleMode, isManagerOrOwner, loadFinancialReport]);
 
-  if (!isOwner) {
+  if (!isManagerOrOwner) {
     return (
       <div className="max-w-md mx-auto py-12 text-center space-y-4">
-        <ShieldAlert className="h-12 w-12 text-rose-500 mx-auto" />
-        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Access Restricted</h2>
-        <p className="text-xs text-slate-500">
-          Financial Profit & Loss statements are strictly restricted to Business Owners.
+        <div className="w-16 h-16 mx-auto bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+          <Lock className="h-8 w-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Manager Mode Required</h2>
+        <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+          Financial Profit & Loss statements are restricted to Managers & Business Owners. Please unlock Manager Mode to view revenue, COGS, and profit metrics.
         </p>
+        <div className="pt-2">
+          <Button
+            onClick={() => setManagerUnlockModalOpen(true)}
+            className="bg-[#C83818] hover:bg-[#A72B11] text-white font-bold px-6 py-2.5 rounded-xl shadow-md"
+          >
+            Unlock Manager Mode (PIN: 1234)
+          </Button>
+        </div>
       </div>
     );
   }
@@ -50,6 +67,7 @@ export const FinancialReportPage: React.FC = () => {
         <div className="flex items-center space-x-2 bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
           <Input
             type="date"
+            lang="en-US"
             value={startDate}
             onChange={(e) => setDateRange(e.target.value, endDate)}
             className="text-xs border-none p-1"
@@ -57,6 +75,7 @@ export const FinancialReportPage: React.FC = () => {
           <span className="text-slate-400 text-xs">to</span>
           <Input
             type="date"
+            lang="en-US"
             value={endDate}
             onChange={(e) => setDateRange(startDate, e.target.value)}
             className="text-xs border-none p-1"

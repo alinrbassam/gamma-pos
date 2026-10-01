@@ -27,7 +27,7 @@ export const POSShiftModal: React.FC<Props> = ({ isOpen, onClose, onConfirm }) =
 
         <Card className="space-y-3">
           <Input
-            label="Opening Float Cash (FCFA)"
+            label="Opening Float Cash ($ USD)"
             type="number"
             step="any"
             value={openingCash}

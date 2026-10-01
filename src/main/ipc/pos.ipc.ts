@@ -5,8 +5,6 @@ import { ApiResponse } from '../../shared/types';
 import { POSSalesService } from '../services/pos-sales.service';
 import { POSSuspendedService } from '../services/pos-suspended.service';
 import { POSRefundService } from '../services/pos-refund.service';
-import { CloudSyncService } from '../services/cloud-sync.service';
-import { SupabaseSyncService } from '../services/supabase-sync.service';
 import { POSCheckoutSchema, POSRefundSchema } from '../../shared/validation';
 import { logger } from '../services/logger.service';
 
@@ -14,7 +12,6 @@ export function registerPOSIpcHandlers(db: Database.Database): void {
   const posSalesService = new POSSalesService(db);
   const posSuspendedService = new POSSuspendedService(db);
   const posRefundService = new POSRefundService(db);
-  const cloudSync = new CloudSyncService(db);
 
   ipcMain.handle(
     IPC_CHANNELS.POS_CHECKOUT,
@@ -22,8 +19,6 @@ export function registerPOSIpcHandlers(db: Database.Database): void {
       try {
         const parsed = POSCheckoutSchema.parse(payload);
         const res = posSalesService.processCheckout(parsed, cashierId);
-        cloudSync.sync().catch((err) => logger.warn('CloudSync', 'Auto-sync after checkout failed', err));
-        SupabaseSyncService.triggerDebouncedSync(1000);
         return { success: true, data: res };
       } catch (err) {
         logger.error('POSIPC', 'Checkout failed', err);
@@ -121,7 +116,6 @@ export function registerPOSIpcHandlers(db: Database.Database): void {
       try {
         const parsed = POSRefundSchema.parse(payload);
         const res = posRefundService.processRefund(parsed, userId);
-        SupabaseSyncService.triggerDebouncedSync(1000);
         return { success: true, data: res };
       } catch (err) {
         return {
@@ -162,8 +156,6 @@ export function registerPOSIpcHandlers(db: Database.Database): void {
           cashierId,
           payload.notes,
         );
-        cloudSync.sync().catch((err) => logger.warn('CloudSync', 'Auto-sync after debt settlement failed', err));
-        SupabaseSyncService.triggerDebouncedSync(1000);
         return { success: true, data: res };
       } catch (err) {
         return {

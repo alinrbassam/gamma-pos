@@ -50,17 +50,17 @@ export const SalesReportPage: React.FC = () => {
     },
     {
       key: 'subtotal',
-      header: 'Subtotal (FCFA)',
+      header: 'Subtotal ($ USD)',
       render: (r) => <span>{formatCurrency(Number(r.subtotal))}</span>,
     },
     {
       key: 'tax_total',
-      header: 'Tax (FCFA)',
+      header: 'Tax ($ USD)',
       render: (r) => <span>{formatCurrency(Number(r.tax_total))}</span>,
     },
     {
       key: 'grand_total',
-      header: 'Grand Total (FCFA)',
+      header: 'Grand Total ($ USD)',
       render: (r) => <span className="font-black">{formatCurrency(Number(r.grand_total))}</span>,
     },
     {
@@ -94,12 +94,14 @@ export const SalesReportPage: React.FC = () => {
           <Input
             label="From Date"
             type="date"
+            lang="en-US"
             value={startDate}
             onChange={(e) => setDateRange(e.target.value, endDate)}
           />
           <Input
             label="To Date"
             type="date"
+            lang="en-US"
             value={endDate}
             onChange={(e) => setDateRange(startDate, e.target.value)}
           />

@@ -15,7 +15,7 @@ export class ExpenseService {
   }
 
   public createExpense(input: ExpenseInput, userId?: string): ExpenseEntity {
-    logger.info('ExpenseService', `Creating expense: ${input.title} - ${input.amount} FCFA`);
+    logger.info('ExpenseService', `Creating expense: ${input.title} - $${input.amount}`);
     const expense = this.repo.create(input, userId);
 
     try {
@@ -23,7 +23,7 @@ export class ExpenseService {
         user_id: userId,
         action: 'EXPENSE_CREATED',
         module: 'Expenses',
-        details: `Created ${expense.category} expense: ${expense.title} (${expense.amount} FCFA)`,
+        details: `Created ${expense.category} expense: ${expense.title} ($${expense.amount})`,
       });
     } catch {
       // audit failure shouldn't block creation
@@ -52,7 +52,7 @@ export class ExpenseService {
           user_id: userId,
           action: 'EXPENSE_DELETED',
           module: 'Expenses',
-          details: `Deleted ${existing.category} expense: ${existing.title} (${existing.amount} FCFA)`,
+          details: `Deleted ${existing.category} expense: ${existing.title} ($${existing.amount})`,
         });
       } catch {
         // ignore

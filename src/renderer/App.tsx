@@ -10,8 +10,10 @@ import { SystemInfoModule } from '../modules/system-info';
 import { InventoryModule } from '../modules/inventory';
 import { PurchasingModule } from '../modules/purchasing';
 import { POSModule } from '../modules/pos';
+import { TablesModule } from '../modules/tables';
 import { ReportsModule } from '../modules/reports';
 import { ExpensesModule } from '../modules/expenses';
+import { PlaystationModule } from '../modules/playstation';
 import { HelpModule } from '../modules/help';
 import { NavigationLayout } from './components/layout/NavigationLayout';
 import { useAuthStore } from './stores/useAuthStore';
@@ -38,6 +40,8 @@ try {
   moduleRegistry.registerModule(InventoryModule);
   moduleRegistry.registerModule(PurchasingModule);
   moduleRegistry.registerModule(POSModule);
+  moduleRegistry.registerModule(TablesModule);
+  moduleRegistry.registerModule(PlaystationModule);
   moduleRegistry.registerModule(ExpensesModule);
   moduleRegistry.registerModule(ReportsModule);
   moduleRegistry.registerModule(HelpModule);
@@ -74,7 +78,7 @@ const ManagerRouteGuard: React.FC<{ children: React.ReactNode }> = ({ children }
         <button
           type="button"
           onClick={() => setManagerUnlockModalOpen(true)}
-          className="flex items-center space-x-2 rtl:space-x-reverse px-5 py-2.5 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-sky-600/20 transition-all"
+          className="flex items-center space-x-2 rtl:space-x-reverse px-5 py-2.5 bg-[#C83818] hover:bg-[#A72B11] active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-[#C83818]/20 transition-all"
         >
           <Lock className="h-4 w-4" />
           <span>
@@ -159,10 +163,10 @@ export const App: React.FC = () => {
 
   if (isLicenseValid === null) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-900 text-white font-sans">
+      <div className="flex h-screen items-center justify-center bg-[#0E0F12] text-white font-sans">
         <div className="flex flex-col items-center space-y-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-sky-500 border-t-transparent" />
-          <p className="text-sm font-semibold tracking-wide">Initializing Gamma System...</p>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#C83818] border-t-transparent" />
+          <p className="text-sm font-semibold tracking-wide text-slate-300">Initializing Gamma POS...</p>
         </div>
       </div>
     );
@@ -184,7 +188,8 @@ export const App: React.FC = () => {
             element={activeRoleMode === 'cashier' ? <Navigate to="/pos" replace /> : <DashboardPage />}
           />
           {allRoutes.map((r: RouteDefinition) => {
-            const isCashierAllowed = r.path === '/pos' || r.path === '/pos/debts';
+            const isCashierAllowed =
+              r.path === '/pos' || r.path === '/pos/debts' || r.path === '/playstation' || r.path === '/tables';
             return (
               <Route
                 key={r.path}

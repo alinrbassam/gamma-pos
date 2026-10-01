@@ -153,6 +153,39 @@ export const IPC_CHANNELS = {
   SUPABASE_SYNC_NOW: 'supabase_sync:sync_now',
   SUPABASE_SYNC_GET_REMOTE_META: 'supabase_sync:get_remote_meta',
   SUPABASE_SYNC_EVENT: 'supabase_sync:event',
+
+  // Rates & Exchange Channels
+  RATES_GET: 'rates:get',
+  RATES_UPDATE: 'rates:update',
+
+  // PlayStation Gaming Lounge Channels
+  PLAYSTATION_GET_STATE: 'playstation:get_state',
+  PLAYSTATION_START_SESSION: 'playstation:start_session',
+  PLAYSTATION_STOP_SESSION: 'playstation:stop_session',
+  PLAYSTATION_ADD_ITEM: 'playstation:add_item',
+  PLAYSTATION_REMOVE_ITEM: 'playstation:remove_item',
+  PLAYSTATION_CHECKOUT: 'playstation:checkout',
+  PLAYSTATION_SEND_TO_TABLE: 'playstation:send_to_table',
+
+  // Dine-In Tables & Running Tabs Channels
+  TABLES_GET_STATE: 'tables:get_state',
+  TABLES_CREATE: 'tables:create',
+  TABLES_UPDATE: 'tables:update',
+  TABLES_DELETE: 'tables:delete',
+  TABLES_OPEN_TAB: 'tables:open_tab',
+  TABLES_ADD_ITEM: 'tables:add_item',
+  TABLES_UPDATE_ITEM_QTY: 'tables:update_item_qty',
+  TABLES_REMOVE_ITEM: 'tables:remove_item',
+  TABLES_TRANSFER: 'tables:transfer',
+  TABLES_MERGE: 'tables:merge',
+  TABLES_TRANSFER_TO_PLAYSTATION: 'tables:transfer_to_playstation',
+  TABLES_CHECKOUT: 'tables:checkout',
+  TABLES_CUSTOMER_LOOKUP: 'tables:customer_lookup',
+
+  // Hookah Lounge Channels
+  HOOKAH_GET_FLAVORS: 'hookah:get_flavors',
+  HOOKAH_SAVE_FLAVOR: 'hookah:save_flavor',
+  HOOKAH_DELETE_FLAVOR: 'hookah:delete_flavor',
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

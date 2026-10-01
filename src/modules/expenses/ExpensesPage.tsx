@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useExpenseStore } from '../../renderer/stores/useExpenseStore';
 import { useLanguageStore } from '../../renderer/stores/useLanguageStore';
 import { ExpenseCategory } from '@shared/types';
-import { formatCurrency } from '../../renderer/utils/currency';
+import { formatCurrency, formatUSD, formatLBP } from '../../renderer/utils/currency';
+import { useExchangeRateStore } from '../../renderer/stores/useExchangeRateStore';
 import { Button } from '@components/ui/Button';
 import {
   Receipt,
@@ -77,6 +78,7 @@ const CATEGORY_META: Record<
 
 export const ExpensesPage: React.FC = () => {
   const { language } = useLanguageStore();
+  const { usdToLbpRate } = useExchangeRateStore();
   const { expenses, loadExpenses, createExpense, deleteExpense, loadSummary } =
     useExpenseStore();
 
@@ -85,6 +87,7 @@ export const ExpensesPage: React.FC = () => {
 
   // Form State
   const [formCategory, setFormCategory] = useState<ExpenseCategory>('Electricity');
+  const [expenseCurrency, setExpenseCurrency] = useState<'USD' | 'LBP'>('USD');
   const [formAmount, setFormAmount] = useState('');
   const [formDate, setFormDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [formDescription, setFormDescription] = useState('');
@@ -139,20 +142,28 @@ export const ExpensesPage: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const amount = parseFloat(formAmount) || 0;
-    if (amount <= 0) {
+    const cleanAmount = formAmount.replace(',', '.').trim();
+    const parsed = parseFloat(cleanAmount) || 0;
+    if (parsed <= 0) {
       alert(language === 'ar' ? 'يرجى إدخال مبلغ صحيح للمصروف' : 'Please enter a valid expense amount');
       return;
     }
+
+    const effectiveRate = usdToLbpRate || 89500;
+    const finalAmountUsd =
+      expenseCurrency === 'LBP' ? Math.round((parsed / effectiveRate) * 100) / 100 : parsed;
 
     setIsSubmitting(true);
     try {
       const success = await createExpense({
         category: formCategory,
         title: formDescription.trim() || formCategory,
-        amount,
+        amount: finalAmountUsd,
         expenseDate: formDate,
-        notes: formDescription.trim() || undefined,
+        notes:
+          expenseCurrency === 'LBP'
+            ? `${formDescription.trim() ? formDescription.trim() + ' • ' : ''}(${Math.round(parsed).toLocaleString('en-US')} L.L)`
+            : formDescription.trim() || undefined,
         paymentMethod: formPaymentMethod as any,
       });
 
@@ -358,8 +369,11 @@ export const ExpensesPage: React.FC = () => {
                     <td className="p-3.5 text-slate-400">
                       {item.payment_method || 'Cash'}
                     </td>
-                    <td className="p-3.5 font-mono font-black text-sm text-rose-400">
-                      {formatCurrency(item.amount)}
+                    <td className="p-3.5 font-mono">
+                      <div className="font-black text-sm text-rose-400">{formatUSD(item.amount)}</div>
+                      <div className="text-[10px] text-slate-400">
+                        {formatLBP(Math.round(item.amount * (usdToLbpRate || 89500)))}
+                      </div>
                     </td>
                     <td className="p-3.5 text-center">
                       <button
@@ -434,27 +448,70 @@ export const ExpensesPage: React.FC = () => {
                 </select>
               </div>
 
+              {/* Currency Selector */}
+              <div className="flex items-center justify-between pb-1">
+                <label className="block text-xs font-bold text-slate-300">
+                  {language === 'ar' ? 'عملة تسجيل المصروف:' : 'Expense Currency:'}
+                </label>
+                <div className="flex bg-[#0B1120] p-1 rounded-xl border border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setExpenseCurrency('USD')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      expenseCurrency === 'USD'
+                        ? 'bg-rose-500 text-white shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    💵 {language === 'ar' ? 'بالدولار ($ USD)' : 'USD ($)'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExpenseCurrency('LBP')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      expenseCurrency === 'LBP'
+                        ? 'bg-rose-500 text-white shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🇱🇧 {language === 'ar' ? 'بالليرة (L.L)' : 'LBP (L.L)'}
+                  </button>
+                </div>
+              </div>
+
               {/* Amount */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  {language === 'ar' ? 'المبلغ (FCFA):' : 'Amount (FCFA):'}
+                  {expenseCurrency === 'USD'
+                    ? language === 'ar' ? 'المبلغ بالدولار ($ USD):' : 'Amount ($ USD):'
+                    : language === 'ar' ? 'المبلغ بالليرة اللبنانية (L.L):' : 'Amount in Lebanese (L.L):'}
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    min="0.01"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     value={formAmount}
-                    onChange={(e) => setFormAmount(e.target.value)}
-                    placeholder="e.g. 15000"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9.,]/g, '');
+                      setFormAmount(val);
+                    }}
+                    placeholder={expenseCurrency === 'USD' ? 'e.g. 50 or 12.5' : 'e.g. 200000 or 450000'}
                     className="w-full px-3.5 py-2.5 bg-[#0B1120] border border-slate-700 rounded-xl text-lg font-black font-mono text-white focus:outline-none focus:border-rose-500"
                     autoFocus
                     required
                   />
                   <span className="absolute right-3 rtl:right-auto rtl:left-3 top-3 text-xs text-rose-400 font-bold">
-                    FCFA
+                    {expenseCurrency === 'USD' ? 'USD ($)' : 'L.L'}
                   </span>
                 </div>
+                {/* Live Currency Conversion Preview */}
+                {parseFloat(formAmount.replace(',', '.')) > 0 && (
+                  <p className="text-[11px] font-bold text-emerald-400 mt-1">
+                    {expenseCurrency === 'USD'
+                      ? `≈ ${Math.round((parseFloat(formAmount.replace(',', '.')) || 0) * (usdToLbpRate || 89500)).toLocaleString('en-US')} L.L ($1 = ${(usdToLbpRate || 89500).toLocaleString('en-US')} L.L)`
+                      : `≈ $${((parseFloat(formAmount.replace(',', '.')) || 0) / (usdToLbpRate || 89500)).toFixed(2)} USD ($1 = ${(usdToLbpRate || 89500).toLocaleString('en-US')} L.L)`}
+                  </p>
+                )}
               </div>
 
               {/* Date */}

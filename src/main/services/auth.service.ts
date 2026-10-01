@@ -55,7 +55,7 @@ export class AuthService {
         ownerName: 'مدير النظام',
         phone: '00000000',
         email: '',
-        currency: 'FCFA',
+        currency: 'USD',
         timezone: 'UTC',
         dateFormat: 'DD-MM-YYYY',
         timeFormat: '24h',

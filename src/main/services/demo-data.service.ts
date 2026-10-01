@@ -18,9 +18,17 @@ export class DemoDataService {
     catStmt.run('cat-demo-2', 'Shrimps & Crustaceans', 'روبيان وقشريات');
     catStmt.run('cat-demo-3', 'Fillet & Prepared', 'فيليه ومتبل');
 
+    let unitId = 'unit-demo';
+    try {
+      const defaultUnit = this.db.prepare('SELECT id FROM units LIMIT 1')?.get?.() as { id: string } | undefined;
+      if (defaultUnit?.id) unitId = defaultUnit.id;
+    } catch {
+      // ignore
+    }
+
     const prodStmt = this.db.prepare(`
-      INSERT OR IGNORE INTO products (id, sku, barcode, name_en, name_ar, category_id, avg_cost, selling_price, reorder_level, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+      INSERT OR IGNORE INTO products (id, sku, primary_barcode, name_en, name_ar, category_id, base_unit_id, avg_cost, selling_price, reorder_level, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
     `);
 
     prodStmt.run(
@@ -30,6 +38,7 @@ export class DemoDataService {
       'Salmon Fillet 1kg',
       'فيليه سلمون نرويجي 1 كغ',
       'cat-demo-3',
+      unitId,
       14.0,
       22.5,
       10,
@@ -41,6 +50,7 @@ export class DemoDataService {
       'Fresh Sea Bass 1kg',
       'سمك قاروص طازج 1 كغ',
       'cat-demo-1',
+      unitId,
       8.5,
       13.5,
       15,
@@ -52,6 +62,7 @@ export class DemoDataService {
       'Jumbo Shrimp 1kg',
       'روبيان جامبو طازج 1 كغ',
       'cat-demo-2',
+      unitId,
       12.0,
       18.99,
       12,
@@ -63,6 +74,7 @@ export class DemoDataService {
       'Local Hamour 1kg',
       'هامور بلدي طازج 1 كغ',
       'cat-demo-1',
+      unitId,
       11.0,
       17.5,
       8,
@@ -74,6 +86,7 @@ export class DemoDataService {
       'Fresh Calamari 1kg',
       'حبار طازج 1 كغ',
       'cat-demo-2',
+      unitId,
       6.0,
       9.99,
       10,

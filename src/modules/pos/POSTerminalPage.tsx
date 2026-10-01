@@ -4,13 +4,14 @@ import { useProductStore } from '@stores/useProductStore';
 import { useAuthStore } from '@stores/useAuthStore';
 import { useLanguageStore } from '@stores/useLanguageStore';
 import { useZoomStore } from '@stores/useZoomStore';
-import { SalesOrderEntity, ProductEntity } from '@shared/types';
+import { useExchangeRateStore } from '@stores/useExchangeRateStore';
+import { SalesOrderEntity, ProductEntity, HookahFlavorEntity } from '@shared/types';
 import { Button } from '@components/ui/Button';
 import { POSPaymentModal } from './POSPaymentModal';
 import { POSHoldResumeModal } from './POSHoldResumeModal';
 import { POSHoldSaveModal } from './POSHoldSaveModal';
 import { ThermalReceiptModal } from './ThermalReceiptModal';
-import { formatCurrency } from '../../renderer/utils/currency';
+import { formatUSD, formatLBP } from '../../renderer/utils/currency';
 import {
   Search,
   ShoppingCart,
@@ -21,104 +22,12 @@ import {
   PlayCircle,
   CreditCard,
   RotateCcw,
-  Fish,
   Tag,
-  Package,
+  UtensilsCrossed,
+  Coffee,
+  ShoppingBag,
+  Bike,
 } from 'lucide-react';
-
-// Default Fish Products for instant store catalog (Prices in FCFA)
-const DEFAULT_FISH_PRODUCTS: Partial<ProductEntity>[] = [
-  {
-    id: 'fish-salmon',
-    sku: 'FISH-001',
-    name_en: 'Fresh Salmon (سالمون طازج)',
-    name_ar: 'سالمون طازج',
-    selling_price: 6500,
-    allow_decimal_qty: 1,
-    base_unit_id: 'Kg',
-    category_id: 'fresh',
-  },
-  {
-    id: 'fish-seabream',
-    sku: 'FISH-002',
-    name_en: 'Sea Bream (دنيس طازج)',
-    name_ar: 'سمك دنيس طازج',
-    selling_price: 4500,
-    allow_decimal_qty: 1,
-    base_unit_id: 'Kg',
-    category_id: 'fresh',
-  },
-  {
-    id: 'fish-seabass',
-    sku: 'FISH-003',
-    name_en: 'Sea Bass (قاروص طازج)',
-    name_ar: 'سمك قاروص طازج',
-    selling_price: 5000,
-    allow_decimal_qty: 1,
-    base_unit_id: 'Kg',
-    category_id: 'fresh',
-  },
-  {
-    id: 'fish-shrimp-jumbo',
-    sku: 'FISH-004',
-    name_en: 'Jumbo Shrimp (روبيان جامبو)',
-    name_ar: 'روبيان جامبو طازج',
-    selling_price: 8500,
-    allow_decimal_qty: 1,
-    base_unit_id: 'Kg',
-    category_id: 'shrimp',
-  },
-  {
-    id: 'fish-calamari',
-    sku: 'FISH-005',
-    name_en: 'Fresh Calamari (حبار طازج)',
-    name_ar: 'حبار طازج',
-    selling_price: 4000,
-    allow_decimal_qty: 1,
-    base_unit_id: 'Kg',
-    category_id: 'shrimp',
-  },
-  {
-    id: 'fish-hamour',
-    sku: 'FISH-006',
-    name_en: 'Fresh Hamour (هامور بلدي)',
-    name_ar: 'هامور بلدي',
-    selling_price: 6000,
-    allow_decimal_qty: 1,
-    base_unit_id: 'Kg',
-    category_id: 'fresh',
-  },
-  {
-    id: 'fish-fillet',
-    sku: 'FISH-007',
-    name_en: 'White Fish Fillet (فيليه أبيض)',
-    name_ar: 'فيليه سمك أبيض',
-    selling_price: 4500,
-    allow_decimal_qty: 1,
-    base_unit_id: 'Kg',
-    category_id: 'fillet',
-  },
-  {
-    id: 'fish-tuna-steak',
-    sku: 'FISH-008',
-    name_en: 'Tuna Steak (قطع تونة طازجة)',
-    name_ar: 'قطع تونة طازجة',
-    selling_price: 5500,
-    allow_decimal_qty: 1,
-    base_unit_id: 'Kg',
-    category_id: 'fillet',
-  },
-  {
-    id: 'fish-spices',
-    sku: 'EXTRA-001',
-    name_en: 'Fish Seasoning & Spices (بهارات سمك خاصة)',
-    name_ar: 'بهارات وتتبيلة سمك',
-    selling_price: 1000,
-    allow_decimal_qty: 0,
-    base_unit_id: 'Piece',
-    category_id: 'extras',
-  },
-];
 
 export const POSTerminalPage: React.FC = () => {
   const {
@@ -140,6 +49,19 @@ export const POSTerminalPage: React.FC = () => {
   const { user } = useAuthStore();
   const { language } = useLanguageStore();
   const { zoom, zoomIn, zoomOut, resetZoom } = useZoomStore();
+  const { usdToLbpRate } = useExchangeRateStore();
+
+  // Cafeteria Order Type state
+  const [orderType, setOrderType] = useState<'dine_in' | 'takeaway' | 'delivery'>('dine_in');
+  const [tableNumber, setTableNumber] = useState<string>('Table 1');
+  const [deliveryCustomerName, setDeliveryCustomerName] = useState<string>('');
+  const [deliveryPhone, setDeliveryPhone] = useState<string>('');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
+  const [dynamicTables, setDynamicTables] = useState<string[]>([
+    'Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5',
+    'Table 6', 'Table 7', 'Table 8', 'Table 9', 'Table 10',
+    'Table 11', 'Table 12', 'Table 13', 'Table 14', 'Table 15',
+  ]);
 
   const [productSearch, setProductSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -154,6 +76,18 @@ export const POSTerminalPage: React.FC = () => {
     loadProducts('');
     loadMetadata();
 
+    // Load tables dynamically from DB
+    if (window.api?.getTablesState) {
+      window.api.getTablesState().then((res) => {
+        if (res.success && res.data?.tablesWithTabs) {
+          const names = res.data.tablesWithTabs.map((t: any) => t.table.name);
+          if (names.length > 0) {
+            setDynamicTables(names);
+          }
+        }
+      }).catch(() => {});
+    }
+
     const handleFocus = () => {
       loadProducts('');
       loadMetadata();
@@ -161,6 +95,42 @@ export const POSTerminalPage: React.FC = () => {
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [loadProducts, loadMetadata]);
+
+  const [hookahFlavors, setHookahFlavors] = useState<HookahFlavorEntity[]>([]);
+
+  useEffect(() => {
+    if (window.api?.getHookahFlavors) {
+      window.api.getHookahFlavors(true).then((res) => {
+        if (res.success && res.data) setHookahFlavors(res.data);
+      }).catch(() => {});
+    }
+  }, []);
+
+  const handleAddHookahToCart = (flavor: HookahFlavorEntity, type: 'full' | 'refill') => {
+    const prodId = `hookah-${flavor.id}-${type}`;
+    const prodName =
+      language === 'ar'
+        ? `💨 ${flavor.name_ar} (${type === 'full' ? 'نفس كامل' : 'تغيير راس'})`
+        : `💨 ${flavor.name_en} (${type === 'full' ? 'Full' : 'Refill'})`;
+    const price = type === 'full' ? flavor.price_usd : flavor.refill_price_usd;
+
+    const mockProduct: ProductEntity = {
+      id: prodId,
+      sku: `HK-${flavor.id.slice(-6).toUpperCase()}-${type[0].toUpperCase()}`,
+      primary_barcode: `HK-${flavor.id.slice(-6).toUpperCase()}-${type[0].toUpperCase()}`,
+      name_en: prodName,
+      name_ar: prodName,
+      selling_price: price,
+      purchase_cost: 0,
+      category_id: 'cat-shisha',
+      base_unit_id: 'unit-piece',
+      product_type: 'Service',
+      is_active: 1,
+      tax_rate: 0,
+    } as any;
+
+    addToCart(mockProduct, 1.0);
+  };
 
   useEffect(() => {
     if (productSearch.length > 1) {
@@ -205,27 +175,31 @@ export const POSTerminalPage: React.FC = () => {
     const hasDbCategories = dbCategories && dbCategories.length > 0;
     const allChip = {
       id: 'all',
-      labelEn: hasDbCategories ? '🏷️ All Products' : '🐟 All Seafood',
-      labelAr: hasDbCategories ? '🏷️ جميع الأصناف' : '🐟 جميع المأكولات',
-      labelFr: hasDbCategories ? '🏷️ Tous les produits' : '🐟 Tous les poissons',
+      labelEn: '🏷️ All Items',
+      labelAr: '🏷️ جميع الأصناف',
     };
 
     if (hasDbCategories) {
-      const dynamicList = dbCategories.map((c) => ({
-        id: c.id,
-        labelEn: c.name_en,
-        labelAr: c.name_ar || c.name_en,
-        labelFr: c.name_en || c.name_ar,
-      }));
+      const dynamicList = dbCategories
+        .filter((c) => c.id !== 'cat-playstation')
+        .map((c) => {
+          const symbol = c.icon ? `${c.icon} ` : '';
+          return {
+            id: c.id,
+            labelEn: `${symbol}${c.name_en}`,
+            labelAr: `${symbol}${c.name_ar || c.name_en}`,
+          };
+        });
       return [allChip, ...dynamicList];
     }
 
     return [
       allChip,
-      { id: 'fresh', labelEn: 'Fresh Fish', labelAr: 'أسماك طازجة', labelFr: 'Poisson Frais' },
-      { id: 'fillet', labelEn: 'Fillets & Cuts', labelAr: 'فيليه وقطع', labelFr: 'Filets & Tranches' },
-      { id: 'shrimp', labelEn: 'Shrimp & Shellfish', labelAr: 'روبيان وقشريات', labelFr: 'Crevettes & Crustacés' },
-      { id: 'extras', labelEn: 'Spices & Extras', labelAr: 'توابل وملحقات', labelFr: 'Épices & Extras' },
+      { id: 'hot_drinks', labelEn: '☕ Hot Drinks', labelAr: '☕ مشروبات ساخنة' },
+      { id: 'cold_drinks', labelEn: '🥤 Cold Drinks', labelAr: '🥤 مشروبات باردة' },
+      { id: 'food', labelEn: '🥪 Snacks & Sandwiches', labelAr: '🥪 سندويشات وسناكس' },
+      { id: 'shisha', labelEn: '🏺 Shisha / Argileh', labelAr: '🏺 أراكيل' },
+      { id: 'desserts', labelEn: '🍰 Desserts', labelAr: '🍰 حلويات' },
     ];
   }, [dbCategories]);
 
@@ -237,10 +211,18 @@ export const POSTerminalPage: React.FC = () => {
 
   const selectedCatObj = categories.find((c) => c.id === selectedCategory);
 
-  // Combine DB products with default Fish products if DB is empty
-  const displayProducts: ProductEntity[] = (
-    products.length > 0 ? products : (DEFAULT_FISH_PRODUCTS as ProductEntity[])
-  ).filter((p) => {
+  // Products from database (Exclude services like PlayStation)
+  const displayProducts: ProductEntity[] = products.filter((p) => {
+    if (
+      p.id === 'ps5-gaming-time' ||
+      p.id === 'ps5-gaming-service' ||
+      p.sku === 'PS5-TIME' ||
+      p.sku === 'PS5-SRV' ||
+      p.product_type === 'Service' ||
+      p.category_id === 'cat-playstation'
+    ) {
+      return false;
+    }
     const matchesSearch =
       !productSearch ||
       (p.name_en && p.name_en.toLowerCase().includes(productSearch.toLowerCase())) ||
@@ -254,11 +236,7 @@ export const POSTerminalPage: React.FC = () => {
       (selectedCatObj && (
         (p.category_id && p.category_id.toLowerCase() === selectedCatObj.labelEn.toLowerCase()) ||
         (p.category_id && p.category_id.toLowerCase() === selectedCatObj.labelAr.toLowerCase())
-      )) ||
-      (selectedCategory === 'fresh' && (p.name_en?.toLowerCase().includes('fish') || p.name_en?.toLowerCase().includes('sea') || p.name_en?.toLowerCase().includes('salmon'))) ||
-      (selectedCategory === 'shrimp' && (p.name_en?.toLowerCase().includes('shrimp') || p.name_en?.toLowerCase().includes('calamari'))) ||
-      (selectedCategory === 'fillet' && (p.name_en?.toLowerCase().includes('fillet') || p.name_en?.toLowerCase().includes('steak'))) ||
-      (selectedCategory === 'extras' && (p.name_en?.toLowerCase().includes('spice') || p.name_en?.toLowerCase().includes('extra')));
+      ));
 
     return matchesSearch && matchesCategory;
   });
@@ -269,7 +247,8 @@ export const POSTerminalPage: React.FC = () => {
 
     cart.forEach((item) => {
       const lineSub = Math.round(item.quantity * item.unitPrice * 100) / 100;
-      const lineDisc = Math.round(item.discount * 100) / 100;
+      // Per user instruction: discount is ONLY on total receipt, not on item
+      const lineDisc = 0;
       const taxable = Math.max(0, lineSub - lineDisc);
       const tax = Math.round(taxable * (item.taxRate / 100) * 100) / 100;
 
@@ -277,8 +256,9 @@ export const POSTerminalPage: React.FC = () => {
       taxTotal += tax;
     });
 
-    const grandTotal = Math.round((subtotal - orderDiscount + taxTotal) * 100) / 100;
-    return { subtotal, taxTotal, grandTotal };
+    const grandTotal = Math.max(0, Math.round((subtotal - orderDiscount + taxTotal) * 100) / 100);
+    const grandTotalLbp = Math.round(grandTotal * usdToLbpRate);
+    return { subtotal, taxTotal, grandTotal, grandTotalLbp };
   };
 
   const totals = calculateTotals();
@@ -296,9 +276,33 @@ export const POSTerminalPage: React.FC = () => {
       dueDate?: string;
       notes?: string;
     },
+    splitCurrencyDetails?: {
+      paidUsd: number;
+      paidLbp: number;
+      changeUsd: number;
+      changeLbp: number;
+      exchangeRate: number;
+    },
   ) => {
     setAmountTendered(tendered);
-    const sale = await checkout(payments, user?.id, borrowDetails);
+
+    const customerInfo = borrowDetails || (orderType === 'delivery' ? {
+      customerName: deliveryCustomerName || 'Delivery Customer',
+      customerPhone: deliveryPhone,
+    } : undefined);
+
+    const cafeteriaInfo = {
+      orderType,
+      tableNumber: orderType === 'dine_in' ? tableNumber : undefined,
+      deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
+      exchangeRate: splitCurrencyDetails?.exchangeRate || usdToLbpRate,
+      paidUsd: splitCurrencyDetails?.paidUsd || 0,
+      paidLbp: splitCurrencyDetails?.paidLbp || 0,
+      changeUsd: splitCurrencyDetails?.changeUsd || 0,
+      changeLbp: splitCurrencyDetails?.changeLbp || 0,
+    };
+
+    const sale = await checkout(payments, user?.id, customerInfo, cafeteriaInfo);
     if (sale) {
       setShowPaymentModal(false);
       setLastCompletedSale(sale);
@@ -311,14 +315,114 @@ export const POSTerminalPage: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex-1 flex flex-col md:flex-row gap-3 bg-slate-50 text-slate-900 font-sans overflow-hidden select-none">
-      {/* LEFT PANEL: Live Fish Catalog Grid & Category Filter */}
+    <div className="h-full flex-1 flex flex-col md:flex-row gap-3 bg-[#F8F9FA] dark:bg-[#0E0F12] text-slate-900 dark:text-slate-100 font-sans overflow-hidden select-none">
+      {/* LEFT PANEL: Cafeteria Catalog Grid & Category Filter */}
       <div className="flex-1 flex flex-col min-w-0 space-y-3">
+        {/* Cafeteria Order Mode Selector Bar */}
+        <div className="bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] rounded-2xl p-2 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+          <div className="flex items-center space-x-1 rtl:space-x-reverse">
+            <button
+              onClick={() => setOrderType('dine_in')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                orderType === 'dine_in'
+                  ? 'bg-[#C83818] text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1A1C21]'
+              }`}
+            >
+              <UtensilsCrossed className="w-3.5 h-3.5" />
+              <span>{language === 'ar' ? 'صالة (Dine In)' : 'Dine In'}</span>
+            </button>
+
+            <button
+              onClick={() => setOrderType('takeaway')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                orderType === 'takeaway'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1A1C21]'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>{language === 'ar' ? 'سفري (Takeaway)' : 'Takeaway'}</span>
+            </button>
+
+            <button
+              onClick={() => setOrderType('delivery')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                orderType === 'delivery'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1A1C21]'
+              }`}
+            >
+              <Bike className="w-3.5 h-3.5" />
+              <span>{language === 'ar' ? 'توصيل (Delivery)' : 'Delivery'}</span>
+            </button>
+          </div>
+
+          {/* Dine In Table Selector */}
+          {orderType === 'dine_in' && (
+            <div className="flex items-center gap-2 text-xs font-semibold">
+              <span className="text-slate-500 dark:text-slate-400">
+                {language === 'ar' ? 'رقم الطاولة:' : 'Table #:'}
+              </span>
+              <select
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+                className="px-2.5 py-1 bg-slate-50 dark:bg-[#1A1C21] border border-slate-300 dark:border-[#282C35] rounded-lg text-slate-800 dark:text-slate-100 font-bold focus:outline-none focus:ring-1 focus:ring-[#C83818]"
+              >
+                {dynamicTables.map((t) => (
+                  <option key={t} value={t}>
+                    {language === 'ar' ? t.replace('Table', 'طاولة') : t}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.hash = '#/tables';
+                }}
+                className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-lg text-xs font-bold transition-colors"
+                title="Manage Running Tabs & Tables"
+              >
+                <Coffee className="w-3.5 h-3.5" />
+                <span>{language === 'ar' ? 'طاولات الصالة ☕' : 'Tables ☕'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Delivery Details Inputs */}
+          {orderType === 'delivery' && (
+            <div className="flex items-center gap-2 text-xs flex-1 max-w-md">
+              <input
+                type="text"
+                value={deliveryCustomerName}
+                onChange={(e) => setDeliveryCustomerName(e.target.value)}
+                placeholder={language === 'ar' ? 'اسم العميل' : 'Customer Name'}
+                className="px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs w-28 focus:outline-none"
+              />
+              <input
+                type="text"
+                value={deliveryPhone}
+                onChange={(e) => setDeliveryPhone(e.target.value)}
+                placeholder={language === 'ar' ? 'الهاتف' : 'Phone'}
+                className="px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs w-24 focus:outline-none"
+              />
+              <input
+                type="text"
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+                placeholder={language === 'ar' ? 'العنوان' : 'Address'}
+                className="px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs flex-1 focus:outline-none"
+              />
+            </div>
+          )}
+        </div>
+
         {/* Search Bar & Quick Zoom Controls */}
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <div className="flex items-center space-x-2 rtl:space-x-reverse bg-white border border-slate-200 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/20 shadow-sm px-3.5 py-2 rounded-2xl transition-all">
-              <Search className="h-4 w-4 text-sky-600 flex-shrink-0" />
+            <div className="flex items-center space-x-2 rtl:space-x-reverse bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] focus-within:border-[#C83818] focus-within:ring-2 focus-within:ring-[#C83818]/20 shadow-xs px-3.5 py-2 rounded-2xl transition-all">
+              <Search className="h-4 w-4 text-[#C83818] flex-shrink-0" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -326,37 +430,35 @@ export const POSTerminalPage: React.FC = () => {
                 onChange={(e) => setProductSearch(e.target.value)}
                 placeholder={
                   language === 'ar'
-                    ? 'بحث سريع بالاسم أو الكود (سالمون، حمص، روبيان)...'
-                    : language === 'fr'
-                    ? 'Recherche rapide par nom ou code (Saumon, Homos, etc.)...'
-                    : 'Quick search by name or code (Salmon, Homos, Shrimp)...'
+                    ? 'بحث سريع عن منتج (قهوة، ساندويش، عصير، كولا)...'
+                    : 'Quick search by name or code (Coffee, Sandwich, Juice, Cola)...'
                 }
-                className="w-full bg-transparent text-xs sm:text-sm focus:outline-none text-slate-900 placeholder-slate-400"
+                className="w-full bg-transparent text-xs sm:text-sm focus:outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400"
                 autoFocus
               />
             </div>
           </div>
 
           {/* Quick Zoom on POS Screen */}
-          <div className="hidden sm:flex items-center bg-white border border-slate-200 rounded-2xl px-2 py-1 shadow-sm space-x-0.5 rtl:space-x-reverse text-xs select-none">
+          <div className="hidden sm:flex items-center bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] rounded-2xl px-2 py-1 shadow-xs space-x-0.5 rtl:space-x-reverse text-xs select-none">
             <span className="text-[11px] font-semibold text-slate-400 px-1">Zoom:</span>
             <button
               onClick={zoomOut}
-              className="p-1 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+              className="p-1 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
               title="Zoom - (Ctrl -)"
             >
               <Minus className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={resetZoom}
-              className="px-1.5 py-0.5 font-mono font-bold text-sky-600 hover:bg-sky-50 rounded-lg text-xs transition-colors"
+              className="px-1.5 py-0.5 font-mono font-bold text-[#C83818] hover:bg-[#C83818]/10 dark:hover:bg-[#C83818]/20 rounded-lg text-xs transition-colors"
               title="Reset 100% (Ctrl 0)"
             >
               {zoom}%
             </button>
             <button
               onClick={zoomIn}
-              className="p-1 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+              className="p-1 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg text-slate-600 dark:text-slate-300 transition-colors"
               title="Zoom + (Ctrl +)"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -372,69 +474,115 @@ export const POSTerminalPage: React.FC = () => {
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                 selectedCategory === cat.id
-                  ? 'bg-sky-600 text-white shadow-sm border border-sky-600'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-sm'
+                  ? 'bg-[#C83818] text-white shadow-xs border border-[#C83818]'
+                  : 'bg-white dark:bg-[#141518] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1A1C21] hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-[#21242B] shadow-xs'
               }`}
             >
-              {language === 'ar'
-                ? cat.labelAr
-                : language === 'fr'
-                ? cat.labelFr || cat.labelEn
-                : cat.labelEn}
+              {language === 'ar' ? cat.labelAr : cat.labelEn}
             </button>
           ))}
         </div>
 
         {/* Product Catalog Cards Grid */}
-        {displayProducts.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200 rounded-3xl">
-            <div className="p-4 bg-slate-50 text-slate-400 rounded-2xl mb-3">
-              <Package className="h-8 w-8 text-slate-400" />
+        {selectedCategory === 'cat-shisha' ? (
+          <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
+              <span className="font-bold flex items-center gap-1.5">
+                <span>🔥</span>
+                <span>{language === 'ar' ? 'تبديل الفحم مجاني دائمًا للزبائن' : 'Coal changes (فحم) are always free of charge'}</span>
+              </span>
+              <span className="text-[11px] opacity-75 font-mono">
+                {language === 'ar' ? 'اختر نفس كامل أو تجديد رأس' : 'Select Full Shisha or Head Refill'}
+              </span>
             </div>
-            <p className="text-sm font-bold text-slate-700">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {hookahFlavors
+                .filter((flv) => {
+                  if (!productSearch) return true;
+                  const q = productSearch.toLowerCase();
+                  return flv.name_en.toLowerCase().includes(q) || flv.name_ar.includes(productSearch);
+                })
+                .map((flv) => (
+                  <div
+                    key={flv.id}
+                    className="bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] p-3.5 rounded-2xl flex flex-col justify-between space-y-3 shadow-xs hover:border-amber-500/50 transition-all"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/15 flex items-center justify-center text-lg">
+                        💨
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                          {language === 'ar' ? flv.name_ar : flv.name_en}
+                        </h4>
+                        <span className="text-[10px] text-slate-400">
+                          {language === 'ar' ? flv.name_en : flv.name_ar}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-[#21242B]">
+                      <button
+                        type="button"
+                        onClick={() => handleAddHookahToCart(flv, 'full')}
+                        className="flex flex-col items-center justify-center p-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all"
+                      >
+                        <span className="text-[11px]">{language === 'ar' ? '💨 نفس كامل' : '💨 Full'}</span>
+                        <span className="text-[9px] opacity-90 font-mono mt-0.5">
+                          ${Number(flv.price_usd).toFixed(2)}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAddHookahToCart(flv, 'refill')}
+                        className="flex flex-col items-center justify-center p-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs active:scale-95 transition-all"
+                      >
+                        <span className="text-[11px]">{language === 'ar' ? '🔄 تغيير راس' : '🔄 Refill'}</span>
+                        <span className="text-[9px] opacity-90 font-mono mt-0.5">
+                          ${Number(flv.refill_price_usd).toFixed(2)}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        ) : displayProducts.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] rounded-3xl">
+            <div className="p-4 bg-slate-50 dark:bg-[#1A1C21] text-slate-400 rounded-2xl mb-3">
+              <Coffee className="h-8 w-8 text-[#DF7E63]" />
+            </div>
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
               {language === 'ar'
-                ? 'لا توجد منتجات في هذا التصنيف أو البحث'
-                : language === 'fr'
-                ? 'Aucun produit trouvé dans cette catégorie ou recherche'
-                : 'No products found in this category or search'}
+                ? 'لا توجد منتجات مضافة بعد في الكتالوج'
+                : 'No cafeteria products in catalog yet'}
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1 max-w-sm">
               {language === 'ar'
-                ? 'يمكنك إضافة أصناف جديدة وتعيين هذا القسم لها من إدارة المخزون'
-                : language === 'fr'
-                ? 'Vous pouvez ajouter de nouveaux articles et leur attribuer cette catégorie'
-                : 'You can add new items and assign this category in Inventory'}
+                ? 'يمكنك إضافة المشروبات والوجبات وتحديد أسعارها بالدولار من شاشة إدارة المخزون.'
+                : 'You can add cafeteria beverages and food items in the Inventory section.'}
             </p>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 pr-1">
             {displayProducts.map((p) => {
-              const isFish =
-                p.name_en?.toLowerCase().includes('fish') ||
-                p.name_en?.toLowerCase().includes('salmon') ||
-                p.name_en?.toLowerCase().includes('shrimp') ||
-                p.name_en?.toLowerCase().includes('calamari') ||
-                p.name_en?.toLowerCase().includes('seabass') ||
-                p.name_en?.toLowerCase().includes('bream') ||
-                p.name_ar?.includes('سمك') ||
-                p.name_ar?.includes('سالمون') ||
-                p.name_ar?.includes('روبيان') ||
-                p.category_id === 'fresh' ||
-                p.category_id === 'shrimp' ||
-                p.category_id === 'fillet';
+              const priceUsd = p.selling_price || 0;
+              const priceLbp = Math.round(priceUsd * usdToLbpRate);
 
               return (
                 <div
                   key={p.id}
                   onClick={() => addToCart(p, 1.0)}
-                  className="group relative bg-white hover:bg-sky-50/40 border border-slate-200 hover:border-sky-400 p-3.5 rounded-2xl cursor-pointer transition-all flex flex-col justify-between space-y-2.5 select-none active:scale-[0.98] shadow-sm hover:shadow-md"
+                  className="group relative bg-white dark:bg-[#141518] hover:bg-[#C83818]/5 dark:hover:bg-[#1A1C21] border border-slate-200 dark:border-[#21242B] hover:border-[#C83818]/60 dark:hover:border-[#C83818]/60 p-3.5 rounded-2xl cursor-pointer transition-all flex flex-col justify-between space-y-2.5 select-none active:scale-[0.98] shadow-xs hover:shadow-md"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-1 mb-2">
-                      <div className="rounded-xl bg-sky-50 p-2 text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-all shadow-xs">
-                        {isFish ? <Fish className="h-4 w-4" /> : <Tag className="h-4 w-4" />}
+                      <div className="rounded-xl bg-[#C83818]/10 dark:bg-[#C83818]/20 p-2 text-[#C83818] dark:text-[#DF7E63] group-hover:bg-[#C83818] group-hover:text-white transition-all shadow-xs">
+                        <Tag className="h-4 w-4" />
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 font-semibold font-mono">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#1A1C21] border border-slate-200 dark:border-[#282C35] text-slate-600 dark:text-slate-300 font-semibold font-mono">
                         {p.base_unit_id === 'Kg'
                           ? language === 'ar'
                             ? 'بالكيلو'
@@ -444,17 +592,17 @@ export const POSTerminalPage: React.FC = () => {
                           : '/Pc'}
                       </span>
                     </div>
-                    <h4 className="text-xs font-bold text-slate-900 group-hover:text-sky-600 leading-snug">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#C83818] dark:group-hover:text-[#DF7E63] leading-snug">
                       {language === 'ar' ? p.name_ar || p.name_en : p.name_en}
                     </h4>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                    <span className="text-[11px] text-slate-500 font-medium">
-                      {language === 'ar' ? 'السعر:' : 'Price:'}
+                  <div className="pt-2 border-t border-slate-100 dark:border-[#21242B] flex flex-col items-baseline">
+                    <span className="text-sm sm:text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+                      {formatUSD(priceUsd)}
                     </span>
-                    <span className="text-sm sm:text-base font-extrabold text-emerald-600 font-mono tracking-tight">
-                      {formatCurrency(p.selling_price || 0)}
+                    <span className="text-[10px] font-semibold text-slate-400 font-mono">
+                      {formatLBP(priceLbp)}
                     </span>
                   </div>
                 </div>
@@ -465,16 +613,25 @@ export const POSTerminalPage: React.FC = () => {
       </div>
 
       {/* RIGHT PANEL: Shopping Cart & Direct Checkout */}
-      <div className="w-full md:w-[320px] lg:w-[350px] xl:w-[384px] bg-white border border-slate-200 rounded-3xl flex flex-col min-w-0 shadow-sm overflow-hidden">
+      <div className="w-full md:w-[320px] lg:w-[360px] xl:w-[400px] bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] rounded-3xl flex flex-col min-w-0 shadow-xs overflow-hidden">
         {/* Cart Header */}
-        <div className="p-3.5 border-b border-slate-200 flex justify-between items-center bg-slate-50/80">
+        <div className="p-3.5 border-b border-slate-200 dark:border-[#21242B] flex justify-between items-center bg-slate-50/80 dark:bg-[#1A1C21]/60">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <div className="p-1.5 rounded-lg bg-sky-100 text-sky-600">
+            <div className="p-1.5 rounded-lg bg-[#C83818]/10 dark:bg-[#C83818]/20 text-[#C83818] dark:text-[#DF7E63]">
               <ShoppingCart className="h-4 w-4" />
             </div>
-            <h2 className="font-bold text-sm text-slate-900">
-              {language === 'ar' ? `سلة المبيعات (${cart.length})` : `Cart (${cart.length})`}
-            </h2>
+            <div>
+              <h2 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                {language === 'ar' ? `الطلب (${cart.length})` : `Order Cart (${cart.length})`}
+              </h2>
+              <span className="text-[10px] text-slate-400 block font-medium">
+                {orderType === 'dine_in'
+                  ? `🍽️ ${tableNumber}`
+                  : orderType === 'takeaway'
+                  ? '🥡 Takeaway'
+                  : '🛵 Delivery'}
+              </span>
+            </div>
           </div>
           {cart.length > 0 && (
             <button
@@ -487,34 +644,41 @@ export const POSTerminalPage: React.FC = () => {
           )}
         </div>
 
-        {/* Cart Line Items */}
+        {/* Cart Line Items (No per-item discount per user rule) */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {cart.map((item, idx) => {
-            const lineSub = item.quantity * item.unitPrice - item.discount;
+            const lineSubUsd = item.quantity * item.unitPrice;
+            const lineSubLbp = Math.round(lineSubUsd * usdToLbpRate);
+
             return (
               <div
                 key={idx}
-                className="p-3 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs transition-colors"
+                className="p-3 bg-slate-50/70 dark:bg-[#1A1C21]/60 hover:bg-slate-50 dark:hover:bg-[#1A1C21] border border-slate-200 dark:border-[#282C35] rounded-2xl space-y-2 text-xs transition-colors"
               >
                 <div className="flex justify-between items-center font-bold gap-1.5">
-                  <span className="flex-1 min-w-0 truncate text-slate-900 font-bold">
-                    {language === 'ar' ? (item.product.name_ar || item.product.name_en) : item.product.name_en}
+                  <span className="flex-1 min-w-0 truncate text-slate-900 dark:text-slate-100 font-bold">
+                    {language === 'ar' ? item.product.name_ar || item.product.name_en : item.product.name_en}
                   </span>
-                  <span className="text-emerald-600 font-mono text-xs sm:text-sm font-bold shrink-0">
-                    {formatCurrency(lineSub)}
-                  </span>
+                  <div className="text-right shrink-0">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-mono text-xs sm:text-sm font-bold block">
+                      {formatUSD(lineSubUsd)}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-mono font-medium block">
+                      {formatLBP(lineSubLbp)}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Weight & Quantity Controls */}
+                {/* Quantity & Unit Price Controls (NO item discount) */}
                 <div className="flex items-center justify-between gap-1 pt-1">
-                  <div className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white rounded-xl p-0.5 border border-slate-200 shadow-xs">
+                  <div className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-xl p-0.5 border border-slate-200 dark:border-[#282C35] shadow-xs">
                     <button
                       onClick={() => {
                         const isKg = item.product.base_unit_id === 'Kg' && item.product.allow_decimal_qty === 1;
                         const min = isKg ? 0.05 : 1;
                         updateCartItem(idx, 'quantity', Math.max(min, Math.round((item.quantity - 1) * 100) / 100));
                       }}
-                      className="p-1 hover:text-sky-600 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                      className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg transition-colors"
                       title="-1"
                     >
                       <Minus className="h-3 w-3" />
@@ -529,7 +693,7 @@ export const POSTerminalPage: React.FC = () => {
                           const val = parseFloat(e.target.value);
                           updateCartItem(idx, 'quantity', isNaN(val) ? 0 : val);
                         }}
-                        className="w-11 text-center bg-transparent font-bold font-mono focus:outline-none text-slate-900 text-[11px]"
+                        className="w-11 text-center bg-transparent font-bold font-mono focus:outline-none text-slate-900 dark:text-slate-100 text-[11px]"
                       />
                       <span className="text-[9px] text-slate-500 font-semibold pr-0.5 rtl:pr-0 rtl:pl-0.5">
                         {item.product.base_unit_id === 'Kg' ? (language === 'ar' ? 'كجم' : 'Kg') : (language === 'ar' ? 'قطعة' : 'Pc')}
@@ -539,18 +703,19 @@ export const POSTerminalPage: React.FC = () => {
                       onClick={() =>
                         updateCartItem(idx, 'quantity', Math.round((item.quantity + 1) * 100) / 100)
                       }
-                      className="p-1 hover:text-sky-600 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                      className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg transition-colors"
                       title="+1"
                     >
                       <Plus className="h-3 w-3" />
                     </button>
                   </div>
 
-                  {/* Price per Unit (FCFA) */}
+                  {/* Price per Unit in USD ($) */}
                   <div
-                    className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white rounded-xl px-1.5 py-1 border border-slate-200 hover:border-emerald-500 transition-colors shadow-xs"
-                    title={language === 'ar' ? 'تعديل السعر للوحدة' : 'Editable unit price'}
+                    className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-xl px-1.5 py-1 border border-slate-200 dark:border-[#282C35] hover:border-emerald-500 transition-colors shadow-xs"
+                    title={language === 'ar' ? 'سعر الوحدة ($)' : 'Unit price in USD ($)'}
                   >
+                    <span className="text-[10px] text-slate-400 font-bold">$</span>
                     <input
                       type="number"
                       step="any"
@@ -559,33 +724,13 @@ export const POSTerminalPage: React.FC = () => {
                       onChange={(e) =>
                         updateCartItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)
                       }
-                      className="w-12 text-center bg-transparent font-bold font-mono focus:outline-none text-emerald-600 text-[11px]"
-                    />
-                    <span className="text-[9px] text-slate-400 font-mono">F</span>
-                  </div>
-
-                  {/* Line Item Discount */}
-                  <div
-                    className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white rounded-xl px-1.5 py-1 border border-slate-200 hover:border-amber-500 transition-colors shadow-xs"
-                    title={language === 'ar' ? 'خصم الصنف (FCFA)' : 'Item discount (FCFA)'}
-                  >
-                    <Tag className="h-3 w-3 text-amber-500 shrink-0" />
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={item.discount}
-                      onChange={(e) =>
-                        updateCartItem(idx, 'discount', Math.max(0, parseFloat(e.target.value) || 0))
-                      }
-                      placeholder="0"
-                      className="w-10 text-center bg-transparent font-bold font-mono focus:outline-none text-amber-600 text-[11px]"
+                      className="w-12 text-center bg-transparent font-bold font-mono focus:outline-none text-emerald-600 dark:text-emerald-400 text-[11px]"
                     />
                   </div>
 
                   <button
                     onClick={() => removeFromCart(idx)}
-                    className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+                    className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -596,42 +741,63 @@ export const POSTerminalPage: React.FC = () => {
 
           {cart.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 py-16">
-              <div className="p-4 rounded-3xl bg-slate-100 border border-slate-200 mb-3">
-                <Fish className="h-10 w-10 text-sky-400" />
+              <div className="p-4 rounded-3xl bg-slate-100 dark:bg-[#1A1C21] border border-slate-200 dark:border-[#282C35] mb-3">
+                <Coffee className="h-10 w-10 text-[#DF7E63]" />
               </div>
-              <p className="text-xs font-semibold text-slate-500">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                 {language === 'ar'
-                  ? 'اختر صنف سمك من القائمة للبدء'
-                  : 'Select seafood from catalog to start sale'}
+                  ? 'اختر من القائمة لإضافة أصناف للطلب'
+                  : 'Select cafeteria items to start order'}
               </p>
             </div>
           )}
         </div>
 
         {/* Cart Totals & Checkout Button */}
-        <div className="p-4 border-t border-slate-200 space-y-3 bg-slate-50/80">
+        <div className="p-4 border-t border-slate-200 dark:border-[#21242B] space-y-3 bg-slate-50/80 dark:bg-[#141518]">
           <div className="space-y-1.5 text-xs">
-            <div className="flex justify-between text-slate-500">
+            <div className="flex justify-between text-slate-500 dark:text-slate-400">
               <span>{language === 'ar' ? 'المجموع الفرعي:' : 'Subtotal:'}</span>
-              <span className="font-mono font-bold text-slate-800">{formatCurrency(totals.subtotal)}</span>
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                {formatUSD(totals.subtotal)}
+              </span>
             </div>
-            <div className="flex justify-between items-center text-slate-500">
-              <span>{language === 'ar' ? 'خصم الفاتورة (FCFA):' : 'Order Discount (FCFA):'}</span>
+
+            {/* Discount on Total Receipt ONLY */}
+            <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
+              <span>{language === 'ar' ? 'خصم الفاتورة ($):' : 'Receipt Discount ($):'}</span>
               <div className="flex items-center space-x-1">
+                <span className="text-[11px] text-amber-500 font-bold">$</span>
                 <input
                   type="number"
                   min="0"
                   step="any"
                   value={orderDiscount}
                   onChange={(e) => setOrderDiscount(parseFloat(e.target.value) || 0)}
-                  className="w-20 px-1.5 py-0.5 text-right bg-white border border-slate-300 rounded text-xs text-amber-600 font-mono font-bold focus:outline-none focus:border-amber-500"
+                  placeholder="0.00"
+                  className="w-16 px-1.5 py-0.5 text-right bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-lg text-xs text-amber-600 font-mono font-bold focus:outline-none focus:border-amber-500"
                 />
-                <span className="text-[10px] text-slate-400">FCFA</span>
               </div>
             </div>
-            <div className="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-200">
-              <span>{language === 'ar' ? 'الإجمالي الكلي:' : 'Grand Total:'}</span>
-              <span className="font-mono text-xl font-black text-emerald-600">{formatCurrency(totals.grandTotal)}</span>
+
+            {/* Grand Total in USD and LBP */}
+            <div className="pt-2 border-t border-slate-200 dark:border-[#21242B]">
+              <div className="flex justify-between items-baseline">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  {language === 'ar' ? 'الإجمالي بالدولار:' : 'Total (USD):'}
+                </span>
+                <span className="font-mono text-xl font-black text-[#DF7E63]">
+                  {formatUSD(totals.grandTotal)}
+                </span>
+              </div>
+              <div className="flex justify-between items-baseline pt-0.5">
+                <span className="text-[11px] text-slate-400 font-semibold">
+                  {language === 'ar' ? 'الإجمالي بالليرة:' : 'Total (LBP):'}
+                </span>
+                <span className="font-mono text-sm font-bold text-slate-700 dark:text-slate-300">
+                  {formatLBP(totals.grandTotalLbp)}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -640,47 +806,43 @@ export const POSTerminalPage: React.FC = () => {
               variant="outline"
               disabled={cart.length === 0}
               onClick={handleHoldSale}
-              className="text-xs border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-xl"
+              className="text-xs border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 rounded-xl"
             >
               <PauseCircle className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-              <span>{language === 'ar' ? 'تعليق البيع' : 'Hold Sale'}</span>
+              <span>{language === 'ar' ? 'تعليق الطلب' : 'Hold Order'}</span>
             </Button>
 
             <Button
               variant="outline"
               onClick={() => setShowHoldModal(true)}
-              className="text-xs border-sky-300 text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-xl"
+              className="text-xs border-slate-300 dark:border-[#282C35] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-xl"
             >
               <PlayCircle className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-              <span>{language === 'ar' ? 'استرجاع معلق' : 'Resume'}</span>
+              <span>{language === 'ar' ? 'استئناف' : 'Resume'}</span>
             </Button>
           </div>
 
           <Button
-            size="lg"
             disabled={cart.length === 0 || isLoading}
             onClick={() => setShowPaymentModal(true)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center space-x-2 rtl:space-x-reverse shadow-md shadow-emerald-600/20 py-3.5 text-sm rounded-2xl transition-all active:scale-[0.99]"
+            className="w-full py-3.5 bg-[#C83818] hover:bg-[#A72B11] text-white font-black text-sm rounded-2xl shadow-lg shadow-[#C83818]/25 flex items-center justify-center space-x-2 rtl:space-x-reverse active:scale-[0.99] transition-all disabled:opacity-50"
           >
             <CreditCard className="h-5 w-5" />
-            <span>{language === 'ar' ? 'إتمام الدفع والفاتورة →' : 'Pay Cash & Print Receipt →'}</span>
+            <span>
+              {language === 'ar'
+                ? `دفع الحساب (${formatUSD(totals.grandTotal)})`
+                : `Pay Order (${formatUSD(totals.grandTotal)})`}
+            </span>
           </Button>
         </div>
       </div>
 
-      {/* Payment Modal */}
+      {/* Modals */}
       <POSPaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         grandTotal={totals.grandTotal}
         onConfirm={handlePaymentConfirm}
-      />
-
-      {/* Hold / Resume Modals */}
-      <POSHoldResumeModal
-        isOpen={showHoldModal}
-        onClose={() => setShowHoldModal(false)}
-        onSelect={(id) => resumeSale(id)}
       />
 
       <POSHoldSaveModal
@@ -689,17 +851,17 @@ export const POSTerminalPage: React.FC = () => {
         onConfirm={handleHoldSaveConfirm}
       />
 
-      {/* Thermal Receipt Preview (Zero QR code) */}
+      <POSHoldResumeModal
+        isOpen={showHoldModal}
+        onClose={() => setShowHoldModal(false)}
+        onSelect={resumeSale}
+      />
+
       <ThermalReceiptModal
-        isOpen={Boolean(lastCompletedSale)}
+        isOpen={!!lastCompletedSale}
         onClose={() => setLastCompletedSale(null)}
         sale={lastCompletedSale}
-        businessName={language === 'ar' ? 'متجر غاما' : 'Gamma Store'}
-        businessAddress={language === 'ar' ? 'السوق المركزي' : 'Central Market'}
       />
     </div>
   );
 };
-export default POSTerminalPage;
-
-

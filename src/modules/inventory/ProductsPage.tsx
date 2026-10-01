@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useProductStore } from '@stores/useProductStore';
 import { useAuthStore } from '@stores/useAuthStore';
 import { useLanguageStore } from '@stores/useLanguageStore';
+import { useExchangeRateStore } from '@stores/useExchangeRateStore';
 import { Table, Column } from '@components/ui/Table';
 import { Button } from '@components/ui/Button';
 import { Badge } from '@components/ui/Badge';
@@ -11,13 +12,14 @@ import { Card } from '@components/ui/Card';
 import { ProductEntity } from '@shared/types';
 import { Plus, Package, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { formatCurrency } from '@renderer/utils/currency';
+import { formatCurrency, formatUSD, formatLBP } from '@renderer/utils/currency';
 
 export const ProductsPage: React.FC = () => {
   const navigate = useNavigate();
   const { products, loadProducts, deleteProduct } = useProductStore();
   const { user, permissions, activeRoleMode } = useAuthStore();
   const { language } = useLanguageStore();
+  const { usdToLbpRate } = useExchangeRateStore();
   const [search, setSearch] = useState('');
   const [productToDelete, setProductToDelete] = useState<ProductEntity | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -30,6 +32,48 @@ export const ProductsPage: React.FC = () => {
   useEffect(() => {
     loadProducts(search);
   }, [loadProducts, search]);
+
+  const activeProducts = useMemo(() => {
+    return products.filter(
+      (p) =>
+        p.id !== 'ps5-gaming-time' &&
+        p.id !== 'ps5-gaming-service' &&
+        p.sku !== 'PS5-TIME' &&
+        p.sku !== 'PS5-SRV' &&
+        p.product_type !== 'Service' &&
+        p.category_id !== 'cat-playstation',
+    );
+  }, [products]);
+
+  const stats = useMemo(() => {
+    const totalTypes = activeProducts.length;
+    const totalUnits = activeProducts.reduce((sum, p) => sum + (p.quantity_on_hand || 0), 0);
+    const totalCostUsd = activeProducts.reduce(
+      (sum, p) => sum + (p.quantity_on_hand || 0) * (p.purchase_cost || 0),
+      0,
+    );
+    const totalSellingUsd = activeProducts.reduce(
+      (sum, p) => sum + (p.quantity_on_hand || 0) * (p.selling_price || 0),
+      0,
+    );
+    const potentialProfitUsd = Math.max(0, totalSellingUsd - totalCostUsd);
+    const outOfStockCount = activeProducts.filter((p) => (p.quantity_on_hand || 0) <= 0).length;
+    const lowStockCount = activeProducts.filter((p) => {
+      const q = p.quantity_on_hand || 0;
+      const min = p.reorder_level || p.min_stock || 10;
+      return q > 0 && q < min;
+    }).length;
+
+    return {
+      totalTypes,
+      totalUnits,
+      totalCostUsd,
+      totalSellingUsd,
+      potentialProfitUsd,
+      outOfStockCount,
+      lowStockCount,
+    };
+  }, [activeProducts]);
 
   const columns: Column<ProductEntity>[] = [
     {
@@ -90,7 +134,7 @@ export const ProductsPage: React.FC = () => {
     },
     {
       key: 'selling_price',
-      header: 'Selling Price (FCFA)',
+      header: language === 'ar' ? 'سعر البيع ($)' : 'Selling Price ($)',
       render: (p) => (
         <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono">
           {formatCurrency(p.selling_price)}
@@ -101,12 +145,31 @@ export const ProductsPage: React.FC = () => {
       ? [
           {
             key: 'purchase_cost' as keyof ProductEntity,
-            header: 'Purchase Cost (FCFA)',
+            header: language === 'ar' ? 'سعر التكلفة ($)' : 'Purchase Cost ($)',
             render: (p: ProductEntity) => (
               <span className="text-slate-500 font-mono text-xs">
                 {formatCurrency(p.purchase_cost)}
               </span>
             ),
+          },
+          {
+            key: 'stock_cost_value' as any,
+            header: language === 'ar' ? 'إجمالي قيمة المخزون ($)' : 'Total Stock Value ($)',
+            render: (p: ProductEntity) => {
+              const qty = p.quantity_on_hand || 0;
+              const cost = p.purchase_cost || 0;
+              const valUsd = qty * cost;
+              return (
+                <div>
+                  <span className="font-extrabold text-xs text-sky-600 dark:text-sky-400 font-mono block">
+                    {formatUSD(valUsd)}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    ({formatLBP(valUsd * usdToLbpRate)})
+                  </span>
+                </div>
+              );
+            },
           },
         ]
       : []),
@@ -154,10 +217,10 @@ export const ProductsPage: React.FC = () => {
           <Package className="h-6 w-6 text-sky-600" />
           <div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              Product Management
+              Product Management & Stock Valuation
             </h1>
             <p className="text-xs text-slate-500">
-              Manage product master records, barcodes, prices, units, and stock tracking settings.
+              Manage product records, stock quantities, and view real-time inventory valuations.
             </p>
           </div>
         </div>
@@ -165,11 +228,93 @@ export const ProductsPage: React.FC = () => {
         <Button
           onClick={() => navigate('/inventory/products/new')}
           size="md"
-          className="flex items-center space-x-2 bg-sky-600 hover:bg-sky-500 font-bold"
+          className="flex items-center space-x-2 bg-[#C83818] hover:bg-[#A72B11] text-white font-bold rounded-xl shadow-md cursor-pointer"
         >
           <Plus className="h-4 w-4" />
-          <span>Add Product</span>
+          <span>{language === 'ar' ? '+ إضافة منتج' : 'Add Product'}</span>
         </Button>
+      </div>
+
+      {/* Inventory & Stock Valuation Summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* Card 1: Total Units & Products */}
+        <div className="bg-white dark:bg-[#141518] p-4 rounded-2xl border border-slate-200 dark:border-[#21242B] flex items-center justify-between shadow-xs">
+          <div>
+            <p className="text-[11px] font-semibold text-slate-400">
+              {language === 'ar' ? 'إجمالي الأصناف والقطع' : 'Total Units In Stock'}
+            </p>
+            <p className="text-xl font-black text-slate-900 dark:text-slate-100 mt-0.5">
+              {stats.totalUnits.toLocaleString()}{' '}
+              <span className="text-xs font-normal text-slate-500">
+                {language === 'ar' ? 'قطعة' : 'units'}
+              </span>
+            </p>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              {stats.totalTypes} {language === 'ar' ? 'منتج مسجل' : 'active products'}
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center font-bold">
+            <Package className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Card 2: Total Stock Cost Valuation */}
+        {canViewCost && (
+          <div className="bg-white dark:bg-[#141518] p-4 rounded-2xl border border-amber-500/20 dark:border-amber-500/30 flex items-center justify-between shadow-xs">
+            <div>
+              <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                {language === 'ar' ? 'قيمة المخزون (سعر التكلفة)' : 'Stock Valuation (Cost Value)'}
+              </p>
+              <p className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono mt-0.5">
+                {formatUSD(stats.totalCostUsd)}
+              </p>
+              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                ({formatLBP(stats.totalCostUsd * usdToLbpRate)})
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-lg">
+              💰
+            </div>
+          </div>
+        )}
+
+        {/* Card 3: Total Stock Selling Valuation */}
+        <div className="bg-white dark:bg-[#141518] p-4 rounded-2xl border border-emerald-500/20 dark:border-emerald-500/30 flex items-center justify-between shadow-xs">
+          <div>
+            <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+              {language === 'ar' ? 'قيمة المخزون (سعر البيع)' : 'Stock Valuation (Selling Value)'}
+            </p>
+            <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
+              {formatUSD(stats.totalSellingUsd)}
+            </p>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+              ({formatLBP(stats.totalSellingUsd * usdToLbpRate)})
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-lg">
+            🏷️
+          </div>
+        </div>
+
+        {/* Card 4: Potential Gross Profit */}
+        {canViewCost && (
+          <div className="bg-white dark:bg-[#141518] p-4 rounded-2xl border border-blue-500/20 dark:border-blue-500/30 flex items-center justify-between shadow-xs">
+            <div>
+              <p className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                {language === 'ar' ? 'الربح الإجمالي المتوقع' : 'Potential Gross Profit'}
+              </p>
+              <p className="text-xl font-black text-blue-600 dark:text-blue-400 font-mono mt-0.5">
+                {formatUSD(stats.potentialProfitUsd)}
+              </p>
+              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                ({formatLBP(stats.potentialProfitUsd * usdToLbpRate)})
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold text-lg">
+              📈
+            </div>
+          </div>
+        )}
       </div>
 
       <Card>
@@ -177,38 +322,32 @@ export const ProductsPage: React.FC = () => {
           <SearchBox
             value={search}
             onChange={setSearch}
-            placeholder="Search products by name..."
+            placeholder={language === 'ar' ? 'بحث عن منتج بالاسم...' : 'Search products by name...'}
           />
         </div>
 
-        <Table columns={columns} data={products} keyExtractor={(p) => p.id} />
+        <Table
+          columns={columns}
+          data={activeProducts}
+          keyExtractor={(p) => p.id}
+        />
       </Card>
 
       {/* Delete Product Confirmation Modal */}
       <Dialog
         isOpen={Boolean(productToDelete)}
-        title={
-          language === 'ar'
-            ? 'تأكيد حذف المنتج'
-            : language === 'fr'
-            ? 'Confirmer la suppression'
-            : 'Confirm Product Deletion'
-        }
+        title={language === 'ar' ? 'تأكيد حذف المنتج' : 'Confirm Product Deletion'}
         onClose={() => !isDeleting && setProductToDelete(null)}
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600 dark:text-slate-300">
             {language === 'ar'
               ? `هل أنت متأكد من حذف المنتج "${productToDelete?.name_ar || productToDelete?.name_en}"؟`
-              : language === 'fr'
-              ? `Êtes-vous sûr de vouloir supprimer "${productToDelete?.name_en}" ?`
               : `Are you sure you want to delete "${productToDelete?.name_en}"?`}
           </p>
           <p className="text-xs text-slate-400">
             {language === 'ar'
               ? 'سيتم حذف هذا المنتج من المخزون ونقطة البيع، مما يتيح لك حذف القسم المرتبط به إن رغبت.'
-              : language === 'fr'
-              ? "Cet article sera retiré du stock et de la caisse, ce qui permettra de supprimer sa catégorie si vous le souhaitez."
               : 'This product will be removed from inventory and the POS terminal, allowing its category to be deleted.'}
           </p>
           <div className="flex justify-end space-x-2 rtl:space-x-reverse pt-2">
@@ -218,7 +357,7 @@ export const ProductsPage: React.FC = () => {
               onClick={() => setProductToDelete(null)}
               disabled={isDeleting}
             >
-              {language === 'ar' ? 'إلغاء' : language === 'fr' ? 'Annuler' : 'Cancel'}
+              {language === 'ar' ? 'إلغاء' : 'Cancel'}
             </Button>
             <Button
               type="button"

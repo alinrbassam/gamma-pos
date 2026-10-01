@@ -286,7 +286,7 @@ export const PurchaseOrderFormPage: React.FC = () => {
                   <tr>
                     <th className="p-3">Product</th>
                     <th className="p-3 w-28">Ordered Qty</th>
-                    <th className="p-3 w-28">Unit Cost (FCFA)</th>
+                    <th className="p-3 w-28">Unit Cost ($ USD)</th>
                     <th className="p-3 w-24">Tax Rate (%)</th>
                     <th className="p-3 w-28">Line Total</th>
                     <th className="p-3 w-12">Action</th>
@@ -368,21 +368,21 @@ export const PurchaseOrderFormPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <Input
-                label="Order Overall Discount (FCFA)"
+                label="Order Overall Discount ($ USD)"
                 type="number"
                 step="any"
                 value={orderDiscount}
                 onChange={(e) => setOrderDiscount(Number(e.target.value))}
               />
               <Input
-                label="Shipping & Freight (FCFA)"
+                label="Shipping & Freight ($ USD)"
                 type="number"
                 step="any"
                 value={shippingCost}
                 onChange={(e) => setShippingCost(Number(e.target.value))}
               />
               <Input
-                label="Additional Handling Charges (FCFA)"
+                label="Additional Handling Charges ($ USD)"
                 type="number"
                 step="any"
                 value={additionalCharges}

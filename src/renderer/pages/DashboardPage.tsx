@@ -15,7 +15,7 @@ import {
   PlusCircle,
   DollarSign,
   BarChart3,
-  Fish,
+  Coffee,
   Flame,
   Scale,
   Layers,
@@ -136,8 +136,8 @@ export const DashboardPage: React.FC = () => {
         const rev = filteredSales.reduce((acc, s) => acc + (s.grand_total || 0), 0);
         const orderCount = filteredSales.length;
         const avg = orderCount > 0 ? rev / orderCount : 0;
-        const estProfit = rev * 0.32; // 32% estimated gross margin for fresh seafood
-        const marginPct = rev > 0 ? (estProfit / rev) * 100 : 32;
+        const estProfit = rev * 0.40; // 40% estimated cafeteria gross margin
+        const marginPct = rev > 0 ? (estProfit / rev) * 100 : 40;
 
         // 3. Purchase Orders
         let purchasesSum = 0;
@@ -166,92 +166,87 @@ export const DashboardPage: React.FC = () => {
           todayPurchases: purchasesSum,
         });
 
-        // 4. Top Selling Products (Aggregated or realistic Fish demo)
-        const defaultTop: TopProductItem[] = [
-          {
-            id: 'top-1',
-            name: language === 'ar' ? 'سالمون نرويجي طازج (Salmon)' : 'Fresh Norwegian Salmon',
-            category: language === 'ar' ? 'أسماك طازجة' : 'Fresh Fish',
-            quantitySold: timeRange === 'today' ? 18.5 : timeRange === 'week' ? 95.0 : 340.0,
-            revenue: timeRange === 'today' ? 416.25 : timeRange === 'week' ? 2137.5 : 7650.0,
-            unit: 'Kg',
-          },
-          {
-            id: 'top-2',
-            name: language === 'ar' ? 'سمك دنيس بلدي (Sea Bream)' : 'Fresh Sea Bream',
-            category: language === 'ar' ? 'أسماك طازجة' : 'Fresh Fish',
-            quantitySold: timeRange === 'today' ? 14.0 : timeRange === 'week' ? 78.5 : 280.0,
-            revenue: timeRange === 'today' ? 196.0 : timeRange === 'week' ? 1099.0 : 3920.0,
-            unit: 'Kg',
-          },
-          {
-            id: 'top-3',
-            name: language === 'ar' ? 'روبيان جامبو طازج (Jumbo Shrimp)' : 'Fresh Jumbo Shrimp',
-            category: language === 'ar' ? 'قشريات وروبيان' : 'Shrimp & Shellfish',
-            quantitySold: timeRange === 'today' ? 8.25 : timeRange === 'week' ? 44.0 : 165.0,
-            revenue: timeRange === 'today' ? 231.0 : timeRange === 'week' ? 1232.0 : 4620.0,
-            unit: 'Kg',
-          },
-          {
-            id: 'top-4',
-            name: language === 'ar' ? 'سمك قاروص طازج (Sea Bass)' : 'Fresh Sea Bass',
-            category: language === 'ar' ? 'أسماك طازجة' : 'Fresh Fish',
-            quantitySold: timeRange === 'today' ? 7.5 : timeRange === 'week' ? 38.0 : 142.0,
-            revenue: timeRange === 'today' ? 123.75 : timeRange === 'week' ? 627.0 : 2343.0,
-            unit: 'Kg',
-          },
-          {
-            id: 'top-5',
-            name: language === 'ar' ? 'فيليه سمك أبيض (White Fillet)' : 'White Fish Fillet',
-            category: language === 'ar' ? 'فيليه وقطع' : 'Fillets & Cuts',
-            quantitySold: timeRange === 'today' ? 5.0 : timeRange === 'week' ? 26.0 : 98.0,
-            revenue: timeRange === 'today' ? 97.5 : timeRange === 'week' ? 507.0 : 1911.0,
-            unit: 'Kg',
-          },
-        ];
-        setTopProducts(defaultTop);
+        // 4. Real Top Selling Products from Reporting Backend
+        let dynamicTop: TopProductItem[] = [];
+        if (window.api?.getReportsDashboard) {
+          try {
+            const dashRes = await window.api.getReportsDashboard({
+              startDate,
+              endDate: todayStr,
+              userRole: 'Owner',
+            });
+            const dData = dashRes?.data as any;
+            if (dashRes && dashRes.success && dData && dData.topProducts) {
+              dynamicTop = (dData.topProducts as any[]).map((p, idx) => ({
+                id: `top-${idx}`,
+                name: p.name_en || 'Product',
+                category: language === 'ar' ? 'كافتيريا وصالة' : 'Cafeteria & Lounge',
+                quantitySold: p.totalQty || 0,
+                revenue: p.totalAmount || 0,
+                unit: language === 'ar' ? 'طلب' : 'Units',
+              }));
+            }
+          } catch {
+            // fallback empty
+          }
+        }
+        setTopProducts(dynamicTop);
 
-        // 5. Category Breakdown
-        const defaultCategories: CategorySale[] = [
-          {
-            id: 'cat-fresh',
-            name: language === 'ar' ? 'أسماك طازجة كاملة (Fresh Fish)' : 'Whole Fresh Fish',
-            revenue: rev > 0 ? rev * 0.55 : 736.0,
-            percentage: 55,
-            color: 'bg-sky-500',
-          },
-          {
-            id: 'cat-shrimp',
-            name: language === 'ar' ? 'روبيان ومأكولات بحرية (Shrimp)' : 'Shrimp & Shellfish',
-            revenue: rev > 0 ? rev * 0.23 : 308.0,
-            percentage: 23,
-            color: 'bg-indigo-500',
-          },
-          {
-            id: 'cat-fillet',
-            name: language === 'ar' ? 'فيليه وقطع جاهزة (Fillets)' : 'Fillets & Steaks',
-            revenue: rev > 0 ? rev * 0.15 : 201.0,
-            percentage: 15,
-            color: 'bg-emerald-500',
-          },
-          {
-            id: 'cat-extras',
-            name: language === 'ar' ? 'بهارات وتتبيلات (Spices & Extras)' : 'Spices & Seasoning',
-            revenue: rev > 0 ? rev * 0.07 : 93.0,
-            percentage: 7,
-            color: 'bg-amber-500',
-          },
-        ];
-        setCategorySales(defaultCategories);
+        // 5. Category Breakdown (from actual DB categories)
+        let dynCategories: CategorySale[] = [];
+        try {
+          if (window.api?.getCategories) {
+            const catRes = await window.api.getCategories();
+            const catList = catRes?.data;
+            if (catRes?.success && catList && catList.length > 0) {
+              const catColors = ['bg-[#C83818]', 'bg-amber-500', 'bg-emerald-500', 'bg-sky-500', 'bg-indigo-500', 'bg-rose-500'];
+              dynCategories = catList.slice(0, 5).map((c: any, i: number) => {
+                const shareRev = rev > 0 ? Math.round((rev / catList.length) * 100) / 100 : 0;
+                const pct = rev > 0 ? Math.round(100 / catList.length) : 0;
+                return {
+                  id: c.id,
+                  name: `${c.icon ? c.icon + ' ' : ''}${language === 'ar' ? (c.name_ar || c.name_en) : c.name_en}`,
+                  revenue: shareRev,
+                  percentage: pct,
+                  color: catColors[i % catColors.length],
+                };
+              });
+            }
+          }
+        } catch {
+          // fallback empty
+        }
+        setCategorySales(dynCategories);
 
-        // 6. Last 7 Days Daily Trend
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        const defaultTrend: DailySalesTrend[] = days.map((d, i) => ({
+        // 6. Last 7 Days Daily Trend from Real Sales
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayMap: Record<string, { amount: number; orders: number }> = {
+          Mon: { amount: 0, orders: 0 },
+          Tue: { amount: 0, orders: 0 },
+          Wed: { amount: 0, orders: 0 },
+          Thu: { amount: 0, orders: 0 },
+          Fri: { amount: 0, orders: 0 },
+          Sat: { amount: 0, orders: 0 },
+          Sun: { amount: 0, orders: 0 },
+        };
+
+        filteredSales.forEach((s) => {
+          if (s.created_at) {
+            const d = new Date(s.created_at);
+            const dayName = dayNames[d.getDay()];
+            if (dayMap[dayName]) {
+              dayMap[dayName].amount += s.grand_total || 0;
+              dayMap[dayName].orders += 1;
+            }
+          }
+        });
+
+        const realTrend: DailySalesTrend[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => ({
           day: d,
-          amount: Math.round(350 + Math.sin(i * 1.5) * 180 + i * 40),
-          orders: Math.round(12 + Math.sin(i) * 5 + i * 2),
+          amount: Math.round(dayMap[d].amount * 100) / 100,
+          orders: dayMap[d].orders,
         }));
-        setDailyTrend(defaultTrend);
+        setDailyTrend(realTrend);
       } catch (err) {
         console.error('Failed to load dashboard metrics', err);
       } finally {
@@ -275,15 +270,15 @@ export const DashboardPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-slate-100 flex items-center space-x-2 rtl:space-x-reverse">
-            <Fish className="h-7 w-7 text-sky-600 dark:text-sky-400" />
+            <Coffee className="h-7 w-7 text-[#C83818] dark:text-[#DF7E63]" />
             <span>
-              {language === 'ar' ? 'لوحة تحليلات وإحصائيات المتجر' : 'Seafood Store Analytics'}
+              {language === 'ar' ? 'لوحة تحليلات كافتيريا وصالة غاما' : 'Gamma Cafeteria & Lounge Analytics'}
             </span>
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {language === 'ar'
-              ? 'متابعة الأصناف الأكثر طلباً، توزيع المبيعات، ومراقبة الأرباح والمخزون'
-              : 'Real-time performance of top selling fish, category shares, revenue, and stock'}
+              ? 'متابعة مبيعات الكافتيريا، جلسات البلايستيشن، والأرباح والمخزون لحظياً'
+              : 'Real-time sales, top cafeteria items, PlayStation lounge, and inventory overview'}
           </p>
         </div>
 
@@ -300,7 +295,7 @@ export const DashboardPage: React.FC = () => {
               onClick={() => setTimeRange(tab.id as any)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 timeRange === tab.id
-                  ? 'bg-sky-600 text-white shadow-xs'
+                  ? 'bg-[#C83818] text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
@@ -315,7 +310,7 @@ export const DashboardPage: React.FC = () => {
         {/* Sell / POS Launcher */}
         <div
           onClick={() => navigate('/pos')}
-          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 p-5 text-white shadow-lg transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99]"
+          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-[#C83818] via-[#A72B11] to-stone-900 p-5 text-white shadow-lg transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
             <div className="rounded-xl bg-white/20 p-2.5 backdrop-blur-sm">
@@ -330,10 +325,10 @@ export const DashboardPage: React.FC = () => {
             <h3 className="text-lg font-black">
               {language === 'ar' ? '🛒 نقطة البيع (الكاشير)' : '🛒 POS Cashier Checkout'}
             </h3>
-            <p className="text-[11px] text-sky-100 mt-0.5">
+            <p className="text-[11px] text-white/80 mt-0.5">
               {language === 'ar'
-                ? 'اختيار الأسماك، تحديد الوزن بالكيلو، وحساب الإجمالي فوراً'
-                : 'Select fish from catalog, adjust weight in Kg, and cash checkout'}
+                ? 'تسجيل طلبات الصالة، الطاولات، التوصيل والسفري'
+                : 'Take cafeteria orders, dine-in tables, takeaway, or delivery'}
             </p>
           </div>
         </div>
@@ -341,7 +336,7 @@ export const DashboardPage: React.FC = () => {
         {/* Buy / Direct Purchase */}
         <div
           onClick={() => navigate('/purchasing/direct')}
-          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white shadow-lg transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99]"
+          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 p-5 text-white shadow-lg transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
             <div className="rounded-xl bg-white/20 p-2.5 backdrop-blur-sm">
@@ -365,7 +360,7 @@ export const DashboardPage: React.FC = () => {
         {/* Add Product */}
         <div
           onClick={() => navigate('/inventory/products/new')}
-          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99]"
+          className="group relative cursor-pointer overflow-hidden rounded-2xl bg-gradient-to-br from-amber-600 to-orange-700 p-5 text-white shadow-lg transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
             <div className="rounded-xl bg-white/20 p-2.5 backdrop-blur-sm">
@@ -380,8 +375,8 @@ export const DashboardPage: React.FC = () => {
             <h3 className="text-lg font-black">{t('action_add_product')}</h3>
             <p className="text-[11px] text-amber-100 mt-0.5">
               {language === 'ar'
-                ? 'إضافة صنف سمك جديد بالاسم وسعر الكيلو وكمية البداية'
-                : 'Add new seafood product with cost, selling price and starting stock'}
+                ? 'إضافة مشروب، سناك، أو منتج جديد إلى القائمة'
+                : 'Add new drink, snack, or retail product to menu'}
             </p>
           </div>
         </div>
@@ -433,7 +428,7 @@ export const DashboardPage: React.FC = () => {
         <Card className="border-l-4 border-l-indigo-500 p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              {language === 'ar' ? 'المخزون المتوفر' : 'Seafood Stock on Hand'}
+              {language === 'ar' ? 'المخزون المتوفر' : 'Cafeteria Stock on Hand'}
             </span>
             <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/50 p-2 text-indigo-600 dark:text-indigo-400">
               <Scale className="h-5 w-5" />
@@ -441,7 +436,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="mt-2 flex items-baseline justify-between">
             <span className="text-2xl font-black text-slate-900 dark:text-slate-100 font-mono">
-              {stats.totalStockQty} <span className="text-sm font-semibold">{language === 'ar' ? 'كجم' : 'Kg'}</span>
+              {stats.totalStockQty} <span className="text-sm font-semibold">{language === 'ar' ? 'قطعة' : 'Units'}</span>
             </span>
             <span className="text-xs text-slate-500 font-bold">
               {stats.totalProducts} {language === 'ar' ? 'صنف' : 'items'}
@@ -495,9 +490,9 @@ export const DashboardPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Main Analytics Row: Top Selling Fish & Categories Breakdown */}
+      {/* Main Analytics Row: Top Selling Products & Categories Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 1. TOP SELLING SEAFOOD PRODUCTS (2 Columns) */}
+        {/* 1. TOP SELLING PRODUCTS (2 Columns) */}
         <div className="lg:col-span-2">
           <Card className="p-5 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -507,10 +502,10 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                    {language === 'ar' ? 'الأصناف الأكثر مبيعاً' : 'Top Selling Seafood & Items'}
+                    {language === 'ar' ? 'الأصناف الأكثر مبيعاً' : 'Top Selling Products & Items'}
                   </h3>
                   <p className="text-[11px] text-slate-400">
-                    {language === 'ar' ? 'ترتيب الأسماك حسب إجمالي الإيرادات والوزن المباع' : 'Ranked by total revenue and weight (Kg) sold'}
+                    {language === 'ar' ? 'ترتيب الأصناف حسب إجمالي الإيرادات والكميات المباعة' : 'Ranked by total revenue and quantities sold'}
                   </p>
                 </div>
               </div>
@@ -520,59 +515,77 @@ export const DashboardPage: React.FC = () => {
               </Badge>
             </div>
 
-            {/* List of Top Products with Progress Bars */}
-            <div className="space-y-3 pt-1">
-              {topProducts.map((prod, idx) => {
-                const percent = Math.min(100, Math.round((prod.revenue / maxProductRev) * 100));
-                return (
-                  <div
-                    key={prod.id}
-                    className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl space-y-2 border border-slate-100 dark:border-slate-800/80 transition-all hover:border-sky-500/40"
-                  >
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center space-x-2.5 rtl:space-x-reverse">
-                        <span
-                          className={`h-6 w-6 rounded-full flex items-center justify-center font-black text-[11px] ${
-                            idx === 0
-                              ? 'bg-amber-500 text-white shadow-xs shadow-amber-500/30'
-                              : idx === 1
-                              ? 'bg-slate-300 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
-                              : idx === 2
-                              ? 'bg-amber-700 text-white'
-                              : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                          }`}
-                        >
-                          #{idx + 1}
-                        </span>
-                        <div>
-                          <span className="font-bold text-slate-900 dark:text-slate-100 block">
-                            {prod.name}
+            {/* List of Top Products or Clean Empty State */}
+            {topProducts.length === 0 ? (
+              <div className="py-12 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center mx-auto text-[#C83818] dark:text-[#DF7E63]">
+                  <Coffee className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'ar' ? 'لا توجد مبيعات مسجلة في هذه الفترة' : 'No sales recorded in this period yet'}
+                  </p>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    {language === 'ar'
+                      ? 'ستظهر هنا الأصناف الأكثر طلباً ومبيعاً فور تسجيل الطلبات في نقطة البيع'
+                      : 'Completed cafeteria orders and PlayStation sessions will appear here automatically.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 pt-1">
+                {topProducts.map((prod, idx) => {
+                  const percent = Math.min(100, Math.round((prod.revenue / maxProductRev) * 100));
+                  return (
+                    <div
+                      key={prod.id}
+                      className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl space-y-2 border border-slate-100 dark:border-slate-800/80 transition-all hover:border-[#C83818]/40"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center space-x-2.5 rtl:space-x-reverse">
+                          <span
+                            className={`h-6 w-6 rounded-full flex items-center justify-center font-black text-[11px] ${
+                              idx === 0
+                                ? 'bg-[#C83818] text-white shadow-xs shadow-[#C83818]/30'
+                                : idx === 1
+                                ? 'bg-slate-300 text-slate-800 dark:bg-slate-700 dark:text-slate-200'
+                                : idx === 2
+                                ? 'bg-amber-700 text-white'
+                                : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                            }`}
+                          >
+                            #{idx + 1}
                           </span>
-                          <span className="text-[10px] text-slate-400">{prod.category}</span>
+                          <div>
+                            <span className="font-bold text-slate-900 dark:text-slate-100 block">
+                              {prod.name}
+                            </span>
+                            <span className="text-[10px] text-slate-400">{prod.category}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-right rtl:text-left">
+                          <span className="font-black text-slate-900 dark:text-slate-100 font-mono text-sm block">
+                            {formatCurrency(prod.revenue)}
+                          </span>
+                          <span className="text-[11px] text-[#C83818] dark:text-[#DF7E63] font-semibold font-mono">
+                            {prod.quantitySold} {prod.unit}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="text-right rtl:text-left">
-                        <span className="font-black text-slate-900 dark:text-slate-100 font-mono text-sm block">
-                          {formatCurrency(prod.revenue)}
-                        </span>
-                        <span className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold font-mono">
-                          {prod.quantitySold} {prod.unit}
-                        </span>
+                      {/* Progress Fill Bar */}
+                      <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-[#C83818] to-amber-500 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${percent}%` }}
+                        />
                       </div>
                     </div>
-
-                    {/* Progress Fill Bar */}
-                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-sky-500 to-indigo-600 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </div>
 
@@ -596,35 +609,43 @@ export const DashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Category Share List */}
-              <div className="space-y-3.5 pt-3">
-                {categorySales.map((cat) => (
-                  <div key={cat.id} className="space-y-1.5 text-xs">
-                    <div className="flex justify-between items-center font-bold">
-                      <span className="text-slate-800 dark:text-slate-200">{cat.name}</span>
-                      <span className="font-mono text-slate-900 dark:text-slate-100">
-                        {formatCurrency(cat.revenue)} ({cat.percentage}%)
-                      </span>
+              {/* Category Share List or Empty State */}
+              {categorySales.length === 0 ? (
+                <div className="py-12 text-center space-y-2">
+                  <p className="text-xs text-slate-400">
+                    {language === 'ar' ? 'لا توجد فئات بعد' : 'No category sales yet'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3.5 pt-3">
+                  {categorySales.map((cat) => (
+                    <div key={cat.id} className="space-y-1.5 text-xs">
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-slate-800 dark:text-slate-200">{cat.name}</span>
+                        <span className="font-mono text-slate-900 dark:text-slate-100">
+                          {formatCurrency(cat.revenue)} ({cat.percentage}%)
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div
+                          className={`${cat.color} h-full rounded-full transition-all duration-500`}
+                          style={{ width: `${cat.percentage}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <div
-                        className={`${cat.color} h-full rounded-full transition-all duration-500`}
-                        style={{ width: `${cat.percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Category Insights Footer */}
-            <div className="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-xl border border-sky-200 dark:border-sky-800/60 text-xs text-sky-800 dark:text-sky-300">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/60 text-xs text-amber-900 dark:text-amber-200">
               <span className="font-bold block mb-0.5">
                 💡 {language === 'ar' ? 'ملاحظة الأداء:' : 'Key Insight:'}
               </span>
               {language === 'ar'
-                ? 'الأسماك الطازجة والروبيان تشكل أكثر من 75% من مجمل إيرادات المتجر.'
-                : 'Whole Fresh Fish and Jumbo Shrimp drive over 75% of your total store revenue.'}
+                ? 'راقب مبيعات الأصناف الأكثر طلباً وجلسات صالة البلايستيشن فورياً لتحسين الإيرادات.'
+                : 'Monitor your top cafeteria items and PlayStation lounge sessions in real-time.'}
             </div>
           </Card>
         </div>

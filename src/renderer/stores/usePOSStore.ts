@@ -44,6 +44,16 @@ interface POSState {
       dueDate?: string;
       notes?: string;
     },
+    cafeteriaDetails?: {
+      orderType?: 'dine_in' | 'takeaway' | 'delivery';
+      tableNumber?: string;
+      deliveryAddress?: string;
+      exchangeRate?: number;
+      paidUsd?: number;
+      paidLbp?: number;
+      changeUsd?: number;
+      changeLbp?: number;
+    },
   ) => Promise<SalesOrderEntity | null>;
   holdCurrentSale: (referenceName: string, cashierId?: string) => Promise<boolean>;
   loadSuspendedSales: () => Promise<void>;
@@ -110,7 +120,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
   setOrderDiscount: (discount: number) => set({ orderDiscount: discount }),
   setAmountTendered: (amount: number) => set({ amountTendered: amount }),
 
-  checkout: async (payments, cashierId, customerDetails) => {
+  checkout: async (payments, cashierId, customerDetails, cafeteriaDetails) => {
     set({ isLoading: true, error: null });
     try {
       if (window.api?.posCheckout) {
@@ -122,6 +132,14 @@ export const usePOSStore = create<POSState>((set, get) => ({
           notes: customerDetails?.notes || get().notes || undefined,
           orderDiscount: get().orderDiscount,
           amountTendered: get().amountTendered,
+          orderType: cafeteriaDetails?.orderType || 'dine_in',
+          tableNumber: cafeteriaDetails?.tableNumber,
+          deliveryAddress: cafeteriaDetails?.deliveryAddress,
+          exchangeRate: cafeteriaDetails?.exchangeRate || 89500,
+          paidUsd: cafeteriaDetails?.paidUsd || 0,
+          paidLbp: cafeteriaDetails?.paidLbp || 0,
+          changeUsd: cafeteriaDetails?.changeUsd || 0,
+          changeLbp: cafeteriaDetails?.changeLbp || 0,
           items: get().cart.map((item) => ({
             productId: item.product.id,
             batchId: item.batchId,

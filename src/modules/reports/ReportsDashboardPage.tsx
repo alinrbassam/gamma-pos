@@ -40,6 +40,7 @@ export const ReportsDashboardPage: React.FC = () => {
           <Calendar className="h-4 w-4 text-slate-400" />
           <Input
             type="date"
+            lang="en-US"
             value={startDate}
             onChange={(e) => setDateRange(e.target.value, endDate)}
             className="text-xs border-none p-1 bg-transparent"
@@ -47,6 +48,7 @@ export const ReportsDashboardPage: React.FC = () => {
           <span className="text-slate-400 text-xs">to</span>
           <Input
             type="date"
+            lang="en-US"
             value={endDate}
             onChange={(e) => setDateRange(startDate, e.target.value)}
             className="text-xs border-none p-1 bg-transparent"
@@ -127,7 +129,7 @@ export const ReportsDashboardPage: React.FC = () => {
                   <th className="p-3">Rank</th>
                   <th className="p-3">Product Name</th>
                   <th className="p-3 text-center">Qty Sold</th>
-                  <th className="p-3 text-right">Revenue (FCFA)</th>
+                  <th className="p-3 text-right">Revenue ($ USD)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">

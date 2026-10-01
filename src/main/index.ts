@@ -11,17 +11,17 @@ import { migrationV5 } from './database/migrations/v5_pos';
 import { migrationV6 } from './database/migrations/v6_reports';
 import { migrationV7 } from './database/migrations/v7_commercial';
 import { migrationV8, ensureBorrowColumns } from './database/migrations/v8_expenses_and_borrow';
+import { migrationV9, ensureCafeteriaAndPlaystationColumns } from './database/migrations/v9_cafeteria_and_playstation';
+import { migrationV10, ensureDineInTables } from './database/migrations/v10_dine_in_tables';
+import { migrationV11, ensureHookahLounge } from './database/migrations/v11_hookah_lounge';
 import path from 'path';
 import { logger } from './services/logger.service';
-import { DemoDataService } from './services/demo-data.service';
-import { CloudSyncService } from './services/cloud-sync.service';
-import { SupabaseSyncService } from './services/supabase-sync.service';
 
 import { IPC_CHANNELS } from '../shared/ipc/channels';
 
 app.setName('Gamma POS');
 try {
-  app.commandLine.appendSwitch('lang', 'fr-FR');
+  app.commandLine.appendSwitch('lang', 'en-US');
   const appData = app.getPath('appData');
   app.setPath('userData', path.join(appData, 'Gamma POS'));
 } catch {
@@ -43,15 +43,18 @@ app.whenReady().then(() => {
       migrationV6,
       migrationV7,
       migrationV8,
+      migrationV9,
+      migrationV10,
+      migrationV11,
     ]);
     ensureBorrowColumns(db);
+    ensureCafeteriaAndPlaystationColumns(db);
+    ensureDineInTables(db);
+    ensureHookahLounge(db);
 
-    logger.info('App', 'Database migrations v2 through v8 executed successfully');
-
-    const demoService = new DemoDataService(db);
-    demoService.ensureZabadCatalog();
+    logger.info('App', 'Database migrations v2 through v11 executed successfully');
   } catch (err) {
-    logger.error('App', 'Failed initializing database migrations or catalog', err);
+    logger.error('App', 'Failed initializing database migrations', err);
   }
 
   registerIpcHandlers();
@@ -135,48 +138,9 @@ app.whenReady().then(() => {
     });
   }
 
-  // Background cloud sync (Dashboard & Supabase Multi-Device Sync)
-  let cloudSyncInstance: CloudSyncService | null = null;
-  let supabaseSyncInstance: SupabaseSyncService | null = null;
-  try {
-    const db = DatabaseConnection.getInstance().getDatabase();
-    cloudSyncInstance = new CloudSyncService(db);
-    supabaseSyncInstance = SupabaseSyncService.getInstance(db);
-
-    // Initial pull & sync from cloud on startup
-    setTimeout(() => {
-      cloudSyncInstance?.sync().catch(() => {});
-      supabaseSyncInstance?.syncNow().catch(() => {});
-    }, 1500);
-
-    // Continuous 30-second background sync between laptops
-    setInterval(() => {
-      cloudSyncInstance?.sync().catch(() => {});
-      supabaseSyncInstance?.syncNow().catch(() => {});
-    }, 30 * 1000);
-  } catch (err) {
-    logger.warn('CloudSync', 'Failed initializing background cloud sync', err);
-  }
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createMainWindow();
-    }
-  });
-
-  // Automatically flush final state to cloud before closing
-  let isQuitting = false;
-  app.on('before-quit', (e) => {
-    if (!isQuitting && (cloudSyncInstance || supabaseSyncInstance)) {
-      isQuitting = true;
-      e.preventDefault();
-      logger.info('App', 'Executing closing sync to cloud before app quit...');
-      Promise.allSettled([
-        cloudSyncInstance ? cloudSyncInstance.sync() : Promise.resolve(),
-        supabaseSyncInstance ? supabaseSyncInstance.syncNow() : Promise.resolve(),
-      ]).finally(() => {
-        app.quit();
-      });
     }
   });
 });

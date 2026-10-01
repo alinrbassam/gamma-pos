@@ -183,7 +183,8 @@ export class ReportsService {
   }
 
   public getFinancialReport(options: ReportFilterOptions) {
-    if (options.userRole && options.userRole !== 'Owner') {
+    const allowedRoles = ['Owner', 'owner', 'Manager', 'manager', 'admin', 'super_admin'];
+    if (options.userRole && !allowedRoles.includes(options.userRole)) {
       throw new Error('Access Denied: Financial P&L statements are restricted to Business Owners.');
     }
 

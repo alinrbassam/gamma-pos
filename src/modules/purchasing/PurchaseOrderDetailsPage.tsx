@@ -110,9 +110,9 @@ export const PurchaseOrderDetailsPage: React.FC = () => {
                 <th className="p-3">Product ID</th>
                 <th className="p-3 text-right">Ordered Qty</th>
                 <th className="p-3 text-right">Received Qty</th>
-                <th className="p-3 text-right">Unit Cost (FCFA)</th>
-                <th className="p-3 text-right">Tax (FCFA)</th>
-                <th className="p-3 text-right">Line Total (FCFA)</th>
+                <th className="p-3 text-right">Unit Cost ($ USD)</th>
+                <th className="p-3 text-right">Tax ($ USD)</th>
+                <th className="p-3 text-right">Line Total ($ USD)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">

@@ -34,8 +34,6 @@ export const SalesHistoryPage: React.FC = () => {
     const confirmed = window.confirm(
       language === 'ar'
         ? `هل تريد تأكيد استرجاع الفاتورة رقم ${sale.invoice_number}؟\nسيتم وضع علامة "مسترجع" على الفاتورة وإعادة كافة الأصناف إلى المخزون.`
-        : language === 'fr'
-        ? `Confirmer le remboursement de la facture ${sale.invoice_number} ?\nLe statut passera à "Remboursé" et les articles seront réintégrés en stock.`
         : `Process refund for ${sale.invoice_number}?\nThe invoice will be marked as "Refunded" and all items returned to stock.`
     );
     if (!confirmed) return;
@@ -55,8 +53,6 @@ export const SalesHistoryPage: React.FC = () => {
       alert(
         language === 'ar'
           ? `تم استرجاع الفاتورة ${sale.invoice_number} بنجاح وإعادة المنتجات إلى المخزون.`
-          : language === 'fr'
-          ? `Facture ${sale.invoice_number} remboursée avec succès. Les articles ont été réintégrés au stock.`
           : `Refund processed successfully for ${sale.invoice_number}. Items have been returned to stock.`
       );
     } else {
@@ -65,8 +61,6 @@ export const SalesHistoryPage: React.FC = () => {
       alert(
         language === 'ar'
           ? `تعذر معالجة الاسترجاع${detail}.`
-          : language === 'fr'
-          ? `Échec du traitement du remboursement${detail}.`
           : `Failed to process refund${detail}.`
       );
     }
@@ -75,13 +69,19 @@ export const SalesHistoryPage: React.FC = () => {
   const columns: Column<SalesOrderEntity>[] = [
     {
       key: 'invoice_number',
-      header: 'Receipt #',
+      header: language === 'ar' ? 'رقم الإيصال' : 'Receipt #',
       render: (s) => (
         <div>
-          <span className="font-bold text-sky-600 dark:text-sky-400 font-mono">
-            {s.invoice_number}
-          </span>
-          <br />
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-[#C83818] dark:text-[#DF7E63] font-mono">
+              {s.invoice_number}
+            </span>
+            {(s.order_type === 'playstation' || s.invoice_number?.startsWith('INV-PS-')) && (
+              <span className="px-1.5 py-0.5 text-[9px] font-black uppercase rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                PS5
+              </span>
+            )}
+          </div>
           <span className="text-[10px] text-slate-400">
             {formatDateTime(s.created_at)}
           </span>
@@ -89,22 +89,82 @@ export const SalesHistoryPage: React.FC = () => {
       ),
     },
     {
+      key: 'order_type',
+      header: language === 'ar' ? 'القسم / الجهاز' : 'Section / Device',
+      render: (s) => {
+        const isPS = s.order_type === 'playstation' || s.invoice_number?.startsWith('INV-PS-') || s.customer_name?.includes('PS');
+        if (isPS) {
+          const rawName = s.table_number || s.customer_name || 'PS5';
+          const cleanName = rawName.includes('PS5') ? rawName : `PS5 - ${rawName}`;
+          return (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-black bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shadow-xs">
+              <span>🎮</span>
+              <span>{cleanName}</span>
+            </span>
+          );
+        }
+
+        if (s.order_type === 'dine_in') {
+          return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+              <span>🍽️</span>
+              <span>{language === 'ar' ? `طاولة ${s.table_number || '-'}` : `Table ${s.table_number || '-'}`}</span>
+            </span>
+          );
+        }
+
+        if (s.order_type === 'takeaway') {
+          return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              <span>🥡</span>
+              <span>{language === 'ar' ? 'سفري' : 'Takeaway'}</span>
+            </span>
+          );
+        }
+
+        if (s.order_type === 'delivery') {
+          return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+              <span>🛵</span>
+              <span>{language === 'ar' ? 'توصيل' : 'Delivery'}</span>
+            </span>
+          );
+        }
+
+        return (
+          <span className="text-xs text-slate-500 font-medium">
+            {language === 'ar' ? 'كافتيريا' : 'Cafeteria POS'}
+          </span>
+        );
+      },
+    },
+    {
       key: 'customer_name',
-      header: 'Customer / Borrower',
-      render: (s) => (
-        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-          {s.customer_name || 'Walk-in'}
-        </span>
-      ),
+      header: language === 'ar' ? 'العميل' : 'Customer',
+      render: (s) => {
+        const isPS = s.order_type === 'playstation' || s.invoice_number?.startsWith('INV-PS-');
+        if (isPS) {
+          return (
+            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+              🎮 {s.customer_name || 'PS5 Lounge'}
+            </span>
+          );
+        }
+        return (
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            {s.customer_name || (language === 'ar' ? 'عميل صالة' : 'Walk-in')}
+          </span>
+        );
+      },
     },
     {
       key: 'payment_method',
-      header: 'Payment Method',
+      header: language === 'ar' ? 'طريقة الدفع' : 'Payment Method',
       render: (s) => <Badge variant="neutral">{s.payment_method}</Badge>,
     },
     {
       key: 'grand_total',
-      header: 'Grand Total',
+      header: language === 'ar' ? 'الإجمالي' : 'Grand Total',
       render: (s) => (
         <span className="font-black text-slate-900 dark:text-slate-100 font-mono">
           {formatCurrency(s.grand_total)}
@@ -113,22 +173,22 @@ export const SalesHistoryPage: React.FC = () => {
     },
     {
       key: 'payment_status',
-      header: 'Status',
+      header: language === 'ar' ? 'الحالة' : 'Status',
       render: (s) => {
         let variant: 'success' | 'danger' | 'warning' | 'neutral' = 'success';
         let label = s.payment_status;
         if (s.payment_status === 'Refunded' || s.payment_status === 'Voided') {
           variant = 'danger';
-          label = language === 'ar' ? 'مسترجع' : language === 'fr' ? 'Remboursé' : 'Refunded';
+          label = language === 'ar' ? 'مسترجع' : 'Refunded';
         } else if (s.payment_status === 'Paid') {
           variant = 'success';
-          label = language === 'ar' ? 'مدفوع' : language === 'fr' ? 'Payé' : 'Paid';
+          label = language === 'ar' ? 'مدفوع' : 'Paid';
         } else if (s.payment_status === 'Unpaid') {
           variant = 'danger';
-          label = language === 'ar' ? 'غير مدفوع' : language === 'fr' ? 'Impayé' : 'Unpaid';
+          label = language === 'ar' ? 'غير مدفوع' : 'Unpaid';
         } else if (s.payment_status === 'Partially paid') {
           variant = 'warning';
-          label = language === 'ar' ? 'مدفوع جزئياً' : language === 'fr' ? 'Partiellement payé' : 'Partially paid';
+          label = language === 'ar' ? 'مدفوع جزئياً' : 'Partially paid';
         }
         return <Badge variant={variant}>{label}</Badge>;
       },

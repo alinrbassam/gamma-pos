@@ -391,6 +391,16 @@ export interface SalesOrderEntity {
   payment_method: 'Cash' | 'Card' | 'Split' | 'Borrow' | 'Credit' | 'Digital Wallet' | 'Store Credit' | string;
   shift_id?: string;
   cashier_id?: string;
+  order_type?: 'dine_in' | 'takeaway' | 'delivery' | 'playstation' | string;
+  table_number?: string;
+  delivery_name?: string;
+  delivery_phone?: string;
+  delivery_address?: string;
+  exchange_rate?: number;
+  paid_usd?: number;
+  paid_lbp?: number;
+  change_usd?: number;
+  change_lbp?: number;
   created_at: string;
 }
 
@@ -501,3 +511,18 @@ export interface ApiResponse<T = unknown> {
     details?: unknown;
   };
 }
+
+export interface HookahFlavorEntity {
+  id: string;
+  name_en: string;
+  name_ar: string;
+  price_usd: number;
+  price_lbp: number;
+  refill_price_usd: number;
+  refill_price_lbp: number;
+  display_order: number;
+  is_active: number;
+  created_at?: string;
+  updated_at?: string;
+}
+

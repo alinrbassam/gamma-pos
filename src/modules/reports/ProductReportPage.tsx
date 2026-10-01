@@ -35,7 +35,7 @@ export const ProductReportPage: React.FC = () => {
     },
     {
       key: 'total_revenue',
-      header: 'Total Revenue (FCFA)',
+      header: 'Total Revenue ($ USD)',
       render: (r) => (
         <span className="font-black text-slate-900 dark:text-slate-100">
           {formatCurrency(Number(r.total_revenue))}
@@ -46,14 +46,14 @@ export const ProductReportPage: React.FC = () => {
       ? [
           {
             key: 'total_cost',
-            header: 'Total Cost (FCFA)',
+            header: 'Total Cost ($ USD)',
             render: (r: Record<string, unknown>) => (
               <span>{formatCurrency(Number(r.total_cost || 0))}</span>
             ),
           },
           {
             key: 'total_profit',
-            header: 'Gross Profit (FCFA)',
+            header: 'Gross Profit ($ USD)',
             render: (r: Record<string, unknown>) => (
               <span className="font-black text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(Number(r.total_profit || 0))}

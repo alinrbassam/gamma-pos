@@ -370,7 +370,7 @@ export const DirectPurchasePage: React.FC = () => {
                   <tr>
                     <th className="p-3">Product</th>
                     <th className="p-3 w-24">Qty</th>
-                    <th className="p-3 w-28">Cost (FCFA)</th>
+                    <th className="p-3 w-28">Cost ($ USD)</th>
                     <th className="p-3 w-28">Batch #</th>
                     <th className="p-3 w-32">Expiry Date</th>
                     <th className="p-3 w-12 text-center">Action</th>
@@ -489,7 +489,7 @@ export const DirectPurchasePage: React.FC = () => {
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name_en} {c.name_ar ? `(${c.name_ar})` : ''}
+                    {c.icon ? `${c.icon} ` : ''}{c.name_en} {c.name_ar ? `(${c.name_ar})` : ''}
                   </option>
                 ))}
               </select>
@@ -516,7 +516,7 @@ export const DirectPurchasePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Input
-              label="Purchase Cost (FCFA) *"
+              label="Purchase Cost ($ USD) *"
               type="number"
               step="any"
               value={newProductCost}
@@ -524,7 +524,7 @@ export const DirectPurchasePage: React.FC = () => {
               required
             />
             <Input
-              label="Selling Price (FCFA) *"
+              label="Selling Price ($ USD) *"
               type="number"
               step="any"
               value={newProductPrice}

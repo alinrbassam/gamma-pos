@@ -11,6 +11,9 @@ import { registerPOSIpcHandlers } from './pos.ipc';
 import { registerReportsIpcHandlers } from './reports.ipc';
 import { registerCommercialIpcHandlers } from './commercial.ipc';
 import { registerExpenseIpcHandlers } from './expense.ipc';
+import { registerCafeteriaAndPlaystationIpcHandlers } from './cafeteria-playstation.ipc';
+import { registerTablesIpcHandlers } from './tables.ipc';
+import { registerHookahIpcHandlers } from './hookah.ipc';
 import { IPC_CHANNELS } from '../../shared/ipc/channels';
 import { ApiResponse } from '../../shared/types';
 import {
@@ -220,6 +223,9 @@ export function registerIpcHandlers(): void {
   registerReportsIpcHandlers(db);
   registerCommercialIpcHandlers(db);
   registerExpenseIpcHandlers(db);
+  registerCafeteriaAndPlaystationIpcHandlers(db);
+  registerTablesIpcHandlers(db);
+  registerHookahIpcHandlers(db);
 
   logger.info('IPC', 'All IPC handlers registered successfully');
 }

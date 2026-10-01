@@ -39,6 +39,12 @@ export class ProductRepository extends BaseRepository<ProductEntity> {
       LEFT JOIN inventory_balances b ON p.id = b.product_id
       LEFT JOIN units u ON p.base_unit_id = u.id
       WHERE (p.deleted_at IS NULL OR p.deleted_at = '')
+        AND p.id != 'ps5-gaming-time'
+        AND p.id != 'ps5-gaming-service'
+        AND p.sku != 'PS5-TIME'
+        AND p.sku != 'PS5-SRV'
+        AND (p.product_type != 'Service' OR p.product_type IS NULL)
+        AND (p.category_id != 'cat-playstation' OR p.category_id IS NULL)
         AND (LOWER(p.name_en) LIKE ?
           OR LOWER(p.name_ar) LIKE ?
           OR LOWER(p.sku) LIKE ?

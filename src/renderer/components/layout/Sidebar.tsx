@@ -21,6 +21,8 @@ import {
   HandCoins,
   Receipt,
   BarChart2,
+  Gamepad2,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -76,13 +78,25 @@ export const Sidebar: React.FC = () => {
       id: 'sell',
       label: getLabel('البيع (نقطة البيع)', 'Sell (POS)', 'Vente (Caisse)'),
       icon: ShoppingCart,
-      color: 'text-sky-400',
+      color: 'text-[#DF7E63]',
       items: [
         {
           id: 'pos-terminal',
           label: getLabel('نقطة البيع (الكاشير)', 'POS Checkout', 'Caisse Enregistreuse'),
           icon: ShoppingCart,
           path: '/pos',
+        },
+        {
+          id: 'dine-in-tables',
+          label: getLabel('طاولات الصالة ☕', 'Dine-In Tables ☕', 'Tables Salle ☕'),
+          icon: UtensilsCrossed,
+          path: '/tables',
+        },
+        {
+          id: 'playstation',
+          label: getLabel('صالة البلايستيشن 🎮', 'PlayStation Lounge 🎮', 'Espace PlayStation 🎮'),
+          icon: Gamepad2,
+          path: '/playstation',
         },
         {
           id: 'pos-debts',
@@ -210,7 +224,7 @@ export const Sidebar: React.FC = () => {
 
   // Auto-expand group containing the active path
   useEffect(() => {
-    if (pathname.startsWith('/pos')) {
+    if (pathname.startsWith('/pos') || pathname.startsWith('/playstation')) {
       setOpenGroups((prev) => ({ ...prev, sell: true }));
     } else if (pathname.startsWith('/expenses') || pathname.startsWith('/reports/financial')) {
       setOpenGroups((prev) => ({ ...prev, finance: true }));
@@ -229,28 +243,30 @@ export const Sidebar: React.FC = () => {
     <aside
       className={`${
         isCollapsed ? 'w-16' : 'w-64'
-      } bg-[#0B1120] text-slate-300 flex flex-col h-screen border-r border-slate-800/80 select-none transition-all duration-300 shrink-0`}
+      } bg-[#0E0F12] text-slate-300 flex flex-col h-screen border-r border-[#1E2026] select-none transition-all duration-300 shrink-0`}
     >
       {/* App Branding & Collapse Toggle */}
       <div
-        className={`p-3 border-b border-slate-800/80 flex items-center ${
+        className={`p-3.5 border-b border-[#1E2026] flex items-center ${
           isCollapsed ? 'flex-col gap-2 justify-center' : 'justify-between'
-        } bg-[#080d19]`}
+        } bg-[#0A0B0E]`}
       >
         <div className="flex items-center space-x-2.5 rtl:space-x-reverse min-w-0">
-          <div className="h-9 w-9 bg-gradient-to-tr from-sky-500 via-cyan-500 to-blue-600 rounded-xl flex items-center justify-center font-black text-white text-base shadow-md shadow-cyan-500/25 shrink-0">
-            G
+          <div className="h-9 w-9 bg-gradient-to-tr from-[#9B2810] via-[#C83818] to-[#E25534] rounded-xl flex items-center justify-center font-black text-white text-base shadow-md shadow-[#C83818]/30 shrink-0">
+            <UtensilsCrossed className="h-5 w-5 text-white" />
           </div>
           {!isCollapsed && (
             <div className="min-w-0 truncate">
-              <h2 className="text-sm font-black text-white tracking-wide flex items-center space-x-1 rtl:space-x-reverse">
-                <span>{language === 'ar' ? 'نظام غاما' : 'Gamma POS'}</span>
-                <span className="text-[9px] bg-cyan-500/20 text-cyan-400 font-mono px-1 py-0.2 rounded">v1.0</span>
+              <h2 className="text-sm font-black text-white tracking-wider flex items-center space-x-1 rtl:space-x-reverse">
+                <span>{language === 'ar' ? 'غاما كافيه' : 'GAMMA'}</span>
+                <span className="text-[9px] bg-[#C83818]/25 text-[#E25534] border border-[#C83818]/40 font-mono px-1 py-0.2 rounded font-bold">
+                  v1.0
+                </span>
               </h2>
-              <span className="text-[10px] text-cyan-400/90 font-medium truncate block">
+              <span className="text-[10px] text-slate-400 font-medium truncate block tracking-widest uppercase">
                 {activeRoleMode === 'cashier'
-                  ? getLabel('الكاشير (بيع فقط)', 'Cashier', 'Caisse')
-                  : getLabel('المدير', 'Manager', 'Gérant')}
+                  ? getLabel('كاشير (صالة وسفري)', 'Café & Lounge', 'Caisse')
+                  : getLabel('إدارة الكافيتيريا', 'Manager Access', 'Gérant')}
               </span>
             </div>
           )}
@@ -258,8 +274,8 @@ export const Sidebar: React.FC = () => {
 
         <button
           onClick={toggleCollapse}
-          className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-slate-200 rounded-lg transition-colors shrink-0"
-          title={isCollapsed ? 'Développer la barre latérale' : 'Réduire la barre latérale'}
+          className="p-1.5 hover:bg-[#1A1C21] text-slate-400 hover:text-slate-200 rounded-lg transition-colors shrink-0"
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {isCollapsed ? (
             <ChevronRight className="h-4 w-4 rtl:rotate-180" />
@@ -282,16 +298,16 @@ export const Sidebar: React.FC = () => {
                   isCollapsed ? 'justify-center p-2.5' : 'space-x-3 rtl:space-x-reverse px-3.5 py-2.5'
                 } rounded-xl text-xs font-bold transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-md shadow-sky-500/25 border border-sky-400/30'
-                    : 'hover:bg-slate-800/70 text-slate-300'
+                    ? 'bg-[#C83818] text-white shadow-md shadow-[#C83818]/30 border border-[#C83818]'
+                    : 'hover:bg-[#1A1C21] text-slate-300'
                 }`
               }
             >
-              <LayoutDashboard className="h-4 w-4 text-cyan-400 shrink-0" />
+              <LayoutDashboard className="h-4 w-4 text-orange-400 shrink-0" />
               {!isCollapsed && <span>{t('overview')}</span>}
             </NavLink>
 
-            <div className="border-b border-slate-800/60 my-2" />
+            <div className="border-b border-[#1E2026] my-2" />
           </>
         )}
 
@@ -302,19 +318,20 @@ export const Sidebar: React.FC = () => {
 
           if (isCollapsed) {
             return (
-              <div key={sec.id} className="space-y-1 py-1 border-b border-slate-800/40">
+              <div key={sec.id} className="space-y-1 py-1 border-b border-[#1E2026]/60">
                 {sec.items.map((item) => {
                   const ItemIcon = item.icon;
                   return (
                     <NavLink
                       key={item.id}
                       to={item.path}
+                      end
                       title={item.label}
                       className={({ isActive }) =>
                         `flex items-center justify-center p-2.5 rounded-xl text-xs font-medium transition-all ${
                           isActive
-                            ? 'bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/30 shadow-xs'
-                            : 'hover:bg-slate-800/60 text-slate-400 hover:text-slate-200'
+                            ? 'bg-[#C83818] text-white font-bold shadow-md shadow-[#C83818]/30 border border-[#C83818]'
+                            : 'hover:bg-[#1A1C21] text-slate-400 hover:text-slate-200'
                         }`
                       }
                     >
@@ -331,7 +348,7 @@ export const Sidebar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => toggleGroup(sec.id)}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-800/60 text-slate-300 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold hover:bg-[#1A1C21] text-slate-300 transition-colors"
               >
                 <div className="flex items-center space-x-3 rtl:space-x-reverse">
                   <SectionIcon className={`h-4 w-4 ${sec.color}`} />
@@ -345,18 +362,19 @@ export const Sidebar: React.FC = () => {
               </button>
 
               {isOpen && (
-                <div className="pl-4 rtl:pl-0 rtl:pr-4 space-y-1 border-l rtl:border-l-0 rtl:border-r border-slate-800/70 ml-4 rtl:ml-0 rtl:mr-4">
+                <div className="pl-4 rtl:pl-0 rtl:pr-4 space-y-1 border-l rtl:border-l-0 rtl:border-r border-[#1E2026] ml-4 rtl:ml-0 rtl:mr-4">
                   {sec.items.map((item) => {
                     const ItemIcon = item.icon;
                     return (
                       <NavLink
                         key={item.id}
                         to={item.path}
+                        end
                         className={({ isActive }) =>
-                          `flex items-center space-x-2.5 rtl:space-x-reverse px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                          `flex items-center space-x-2.5 rtl:space-x-reverse px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                             isActive
-                              ? 'bg-cyan-500/15 text-cyan-400 font-bold border border-cyan-500/30 shadow-xs'
-                              : 'hover:bg-slate-800/60 text-slate-400 hover:text-slate-200'
+                              ? 'bg-[#C83818] text-white font-bold shadow-md shadow-[#C83818]/30 border border-[#C83818]'
+                              : 'hover:bg-[#1A1C21] text-slate-400 hover:text-slate-200'
                           }`
                         }
                       >
@@ -373,17 +391,17 @@ export const Sidebar: React.FC = () => {
 
         {activeRoleMode === 'manager' && (
           <>
-            <div className="border-b border-slate-800 my-2" />
+            <div className="border-b border-[#1E2026] my-2" />
             <NavLink
               to="/settings"
               title={t('settings')}
               className={({ isActive }) =>
                 `flex items-center ${
-                  isCollapsed ? 'justify-center p-2.5' : 'space-x-3 rtl:space-x-reverse px-3 py-2.5'
+                  isCollapsed ? 'justify-center p-2.5' : 'space-x-3 rtl:space-x-reverse px-3.5 py-2.5'
                 } rounded-xl text-xs font-bold transition-all ${
                   isActive
-                    ? 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
-                    : 'hover:bg-slate-800 text-slate-300'
+                    ? 'bg-[#C83818] text-white shadow-md shadow-[#C83818]/30 border border-[#C83818]'
+                    : 'hover:bg-[#1A1C21] text-slate-300'
                 }`
               }
             >
@@ -395,10 +413,10 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* Role Switcher & User Profile */}
-      <div className="p-2.5 border-t border-slate-800 space-y-2">
+      <div className="p-2.5 border-t border-[#1E2026] space-y-2">
         {/* Quick Role Switcher Button */}
         {!isCollapsed ? (
-          <div className="bg-slate-800/80 p-1.5 rounded-xl border border-slate-700/60 flex items-center justify-between">
+          <div className="bg-[#141518] p-1.5 rounded-xl border border-[#21242B] flex items-center justify-between">
             <span className="text-[11px] font-semibold text-slate-400 pl-1 rtl:pl-0 rtl:pr-1">
               {getLabel('الوضع:', 'Mode:', 'Mode :')}
             </span>
@@ -406,7 +424,7 @@ export const Sidebar: React.FC = () => {
               onClick={handleRoleSwitch}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                 activeRoleMode === 'cashier'
-                  ? 'bg-sky-600 text-white shadow-xs'
+                  ? 'bg-[#C83818] text-white shadow-xs'
                   : 'bg-emerald-600 text-white shadow-xs'
               }`}
             >
@@ -420,7 +438,7 @@ export const Sidebar: React.FC = () => {
             onClick={handleRoleSwitch}
             className={`w-full p-2 flex items-center justify-center rounded-xl text-sm font-bold transition-all ${
               activeRoleMode === 'cashier'
-                ? 'bg-sky-600 text-white shadow-xs'
+                ? 'bg-[#C83818] text-white shadow-xs'
                 : 'bg-emerald-600 text-white shadow-xs'
             }`}
             title={activeRoleMode === 'cashier' ? 'Passer en Mode Gérant' : 'Passer en Mode Caisse'}
@@ -434,7 +452,7 @@ export const Sidebar: React.FC = () => {
             <span className="truncate font-semibold text-slate-300">
               {user.full_name || user.username}
             </span>
-            <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-sky-400 uppercase">
+            <span className="text-[10px] bg-[#1A1C21] px-2 py-0.5 rounded text-[#DF7E63] uppercase border border-[#21242B]">
               {activeRoleMode}
             </span>
           </div>

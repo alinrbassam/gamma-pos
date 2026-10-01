@@ -15,7 +15,7 @@ export const GeneralSettings: React.FC = () => {
     address: '',
     city: '',
     country: '',
-    currency: 'FCFA',
+    currency: 'USD',
     timezone: 'UTC',
     dateFormat: 'DD-MM-YYYY',
     timeFormat: '24h',

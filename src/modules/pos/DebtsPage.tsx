@@ -3,6 +3,7 @@ import { usePOSStore } from '@stores/usePOSStore';
 import { useLanguageStore } from '@stores/useLanguageStore';
 import { SalesOrderEntity } from '@shared/types';
 import { formatCurrency } from '../../renderer/utils/currency';
+import { useExchangeRateStore } from '../../renderer/stores/useExchangeRateStore';
 import { Button } from '@components/ui/Button';
 import {
   Search,
@@ -18,6 +19,7 @@ import {
 
 export const DebtsPage: React.FC = () => {
   const { language } = useLanguageStore();
+  const { usdToLbpRate } = useExchangeRateStore();
   const { debts, loadDebts, settleDebt } = usePOSStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,7 +113,7 @@ export const DebtsPage: React.FC = () => {
     e.preventDefault();
     if (!selectedDebt) return;
 
-    let amount = parseFloat(repayAmount);
+    let amount = parseFloat(repayAmount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) {
       alert(language === 'ar' ? 'يرجى إدخال مبلغ سداد صحيح' : 'Please enter a valid repayment amount');
       return;
@@ -428,23 +430,34 @@ export const DebtsPage: React.FC = () => {
               {/* Repay Amount */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  {language === 'ar' ? 'مبلغ السداد الحالي (FCFA):' : 'Repayment Amount (FCFA):'}
+                  {language === 'ar' ? 'مبلغ السداد الحالي ($ USD):' : 'Repayment Amount ($ USD):'}
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    min="0.01"
-                    step="any"
+                    type="text"
+                    inputMode="decimal"
                     value={repayAmount}
-                    onChange={(e) => setRepayAmount(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9.,]/g, '');
+                      setRepayAmount(val);
+                    }}
+                    placeholder="e.g. 15.00"
                     className="w-full px-3.5 py-2.5 bg-[#0B1120] border border-slate-700 rounded-xl text-lg font-black font-mono text-white focus:outline-none focus:border-amber-500"
                     autoFocus
                     required
                   />
                   <span className="absolute right-3 rtl:right-auto rtl:left-3 top-3 text-xs text-amber-400 font-bold">
-                    FCFA
+                    USD ($)
                   </span>
                 </div>
+                {parseFloat(repayAmount.replace(',', '.')) > 0 && (
+                  <p className="text-[11px] font-bold text-emerald-400 mt-1">
+                    ≈ {Math.round((parseFloat(repayAmount.replace(',', '.')) || 0) * (usdToLbpRate || 89500)).toLocaleString('en-US')} L.L
+                    <span className="text-[10px] text-slate-400 font-normal ml-1">
+                      ($1 = {(usdToLbpRate || 89500).toLocaleString('en-US')} L.L)
+                    </span>
+                  </p>
+                )}
                 {/* Quick Full Settle Button */}
                 <div className="flex justify-between items-center mt-1.5 px-0.5">
                   <span className="text-[11px] text-slate-400">

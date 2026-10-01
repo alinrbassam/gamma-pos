@@ -10,7 +10,7 @@ files:
 publish:
   provider: github
   owner: alinrbassam
-  repo: Gamma-POS
+  repo: gamma-pos
   releaseType: release
 
 win:

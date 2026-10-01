@@ -40,7 +40,16 @@ export const useProductStore = create<ProductState>((set, get) => ({
       if (window.api?.searchProducts) {
         const res = await window.api.searchProducts(query, 500, 0);
         if (res.success && res.data) {
-          set({ products: res.data as ProductEntity[] });
+          const list = (res.data as ProductEntity[]).filter(
+            (p) =>
+              p.id !== 'ps5-gaming-time' &&
+              p.id !== 'ps5-gaming-service' &&
+              p.sku !== 'PS5-TIME' &&
+              p.sku !== 'PS5-SRV' &&
+              p.product_type !== 'Service' &&
+              p.category_id !== 'cat-playstation',
+          );
+          set({ products: list });
         }
       }
     } catch (err) {

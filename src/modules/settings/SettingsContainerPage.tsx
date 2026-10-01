@@ -9,10 +9,10 @@ import { TaxSettings } from './sections/TaxSettings';
 import { BackupSettings } from './sections/BackupSettings';
 import { PrinterSettings } from './sections/PrinterSettings';
 import { AboutSettings } from './sections/AboutSettings';
-import { CloudSyncSettings } from './sections/CloudSyncSettings';
 import { UpdateSettings } from './sections/UpdateSettings';
 import { SecuritySettings } from './sections/SecuritySettings';
 import { LicensingSettings } from './sections/LicensingSettings';
+import { HookahSettings } from './sections/HookahSettings';
 import { useLanguageStore } from '../../renderer/stores/useLanguageStore';
 import {
   Store,
@@ -24,10 +24,10 @@ import {
   HardDrive,
   Printer,
   History,
-  Smartphone,
   Sparkles,
   ShieldCheck,
   Key,
+  Wind,
 } from 'lucide-react';
 
 export const SettingsContainerPage: React.FC = () => {
@@ -71,6 +71,11 @@ export const SettingsContainerPage: React.FC = () => {
       icon: Coins,
     },
     {
+      id: 'hookah',
+      label: language === 'ar' ? 'الأراكيل والنكهات والأسعار' : 'Hookah & Pricing',
+      icon: Wind,
+    },
+    {
       id: 'tax',
       label: language === 'ar' ? 'نسبة الضريبة (VAT)' : 'Tax & VAT',
       icon: Percent,
@@ -96,11 +101,6 @@ export const SettingsContainerPage: React.FC = () => {
       icon: HardDrive,
     },
     {
-      id: 'cloud_sync',
-      label: language === 'ar' ? 'تطبيق الموبايل والسحابة' : 'Mobile App & Cloud',
-      icon: Smartphone,
-    },
-    {
       id: 'updates',
       label: language === 'ar' ? 'تحديثات النظام' : 'Software Updates',
       icon: Sparkles,
@@ -124,6 +124,8 @@ export const SettingsContainerPage: React.FC = () => {
         return <LanguageSettings />;
       case 'regional':
         return <RegionalSettings />;
+      case 'hookah':
+        return <HookahSettings />;
       case 'tax':
         return <TaxSettings />;
       case 'receipt':
@@ -134,8 +136,6 @@ export const SettingsContainerPage: React.FC = () => {
         return <AppearanceSettings />;
       case 'backup':
         return <BackupSettings />;
-      case 'cloud_sync':
-        return <CloudSyncSettings />;
       case 'updates':
         return <UpdateSettings />;
       case 'changes':

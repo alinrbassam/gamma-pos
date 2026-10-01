@@ -8,8 +8,6 @@ import { LicensingService } from '../services/licensing.service';
 import { BackupService } from '../services/backup.service';
 import { MaintenanceService } from '../services/maintenance.service';
 import { UpdaterService } from '../services/updater.service';
-import { CloudSyncService } from '../services/cloud-sync.service';
-import { SupabaseSyncService } from '../services/supabase-sync.service';
 import { logger } from '../services/logger.service';
 
 export function registerCommercialIpcHandlers(db: Database.Database): void {
@@ -17,8 +15,6 @@ export function registerCommercialIpcHandlers(db: Database.Database): void {
   const backupService = new BackupService(db);
   const maintenanceService = new MaintenanceService(db);
   const updaterService = new UpdaterService();
-  const cloudSyncService = new CloudSyncService(db);
-  const supabaseSyncService = new SupabaseSyncService(db);
 
   // Licensing
   ipcMain.handle(IPC_CHANNELS.LICENSING_GET_DEVICE_ID, async (): Promise<ApiResponse<string>> => {
@@ -165,78 +161,38 @@ export function registerCommercialIpcHandlers(db: Database.Database): void {
     }
   });
 
-  // Cloud Sync & Mobile Dashboard Bridge
+  // Offline Standalone Mode - Cloud Sync Disabled
   ipcMain.handle(IPC_CHANNELS.CLOUD_GET_CONFIG, async (): Promise<ApiResponse> => {
-    try {
-      const config = cloudSyncService.getSyncConfig();
-      return { success: true, data: config };
-    } catch (err) {
-      return { success: false, error: { code: 'CLOUD_CONFIG_ERROR', message: (err as Error).message } };
-    }
+    return { success: true, data: { enabled: false, syncUrl: '', syncKey: '', lastSyncAt: null, lastStatus: 'disabled' } };
   });
 
-  ipcMain.handle(IPC_CHANNELS.CLOUD_UPDATE_CONFIG, async (_, payload: { enabled: boolean; syncUrl: string; syncKey: string }): Promise<ApiResponse> => {
-    try {
-      cloudSyncService.updateSyncConfig(payload);
-      return { success: true, data: true };
-    } catch (err) {
-      return { success: false, error: { code: 'CLOUD_UPDATE_ERROR', message: (err as Error).message } };
-    }
+  ipcMain.handle(IPC_CHANNELS.CLOUD_UPDATE_CONFIG, async (): Promise<ApiResponse> => {
+    return { success: true, data: false };
   });
 
   ipcMain.handle(IPC_CHANNELS.CLOUD_SYNC_NOW, async (): Promise<ApiResponse> => {
-    try {
-      const result = await cloudSyncService.sync();
-      return { success: result.success, data: result };
-    } catch (err) {
-      return { success: false, error: { code: 'CLOUD_SYNC_ERROR', message: (err as Error).message } };
-    }
+    return { success: false, error: { code: 'OFFLINE_STANDALONE', message: 'Cloud sync is permanently disabled in standalone offline mode.' } };
   });
 
   ipcMain.handle(IPC_CHANNELS.CLOUD_GET_SNAPSHOT, async (): Promise<ApiResponse> => {
-    try {
-      const snapshot = cloudSyncService.buildSnapshot();
-      return { success: true, data: snapshot };
-    } catch (err) {
-      return { success: false, error: { code: 'CLOUD_SNAPSHOT_ERROR', message: (err as Error).message } };
-    }
+    return { success: false, error: { code: 'OFFLINE_STANDALONE', message: 'Cloud snapshot disabled.' } };
   });
 
-  // Supabase Multi-Device Cloud Sync
+  // Supabase Multi-Device Cloud Sync - Disabled
   ipcMain.handle(IPC_CHANNELS.SUPABASE_SYNC_GET_CONFIG, async (): Promise<ApiResponse> => {
-    try {
-      const config = supabaseSyncService.getConfig();
-      return { success: true, data: config };
-    } catch (err) {
-      return { success: false, error: { code: 'SUPABASE_CONFIG_ERROR', message: (err as Error).message } };
-    }
+    return { success: true, data: { enabled: false, role: 'store', supabaseUrl: '', supabaseKey: '', autoSyncIntervalMinutes: 0, lastSyncAt: null, lastStatus: 'disabled' } };
   });
 
-  ipcMain.handle(IPC_CHANNELS.SUPABASE_SYNC_UPDATE_CONFIG, async (_, patch: any): Promise<ApiResponse> => {
-    try {
-      supabaseSyncService.updateConfig(patch);
-      return { success: true, data: supabaseSyncService.getConfig() };
-    } catch (err) {
-      return { success: false, error: { code: 'SUPABASE_UPDATE_CONFIG_ERROR', message: (err as Error).message } };
-    }
+  ipcMain.handle(IPC_CHANNELS.SUPABASE_SYNC_UPDATE_CONFIG, async (): Promise<ApiResponse> => {
+    return { success: true, data: { enabled: false } };
   });
 
   ipcMain.handle(IPC_CHANNELS.SUPABASE_SYNC_NOW, async (): Promise<ApiResponse> => {
-    try {
-      const result = await supabaseSyncService.syncNow();
-      return { success: result.success, data: result };
-    } catch (err) {
-      return { success: false, error: { code: 'SUPABASE_SYNC_ERROR', message: (err as Error).message } };
-    }
+    return { success: false, error: { code: 'OFFLINE_STANDALONE', message: 'Cloud sync is permanently disabled in standalone offline mode.' } };
   });
 
   ipcMain.handle(IPC_CHANNELS.SUPABASE_SYNC_GET_REMOTE_META, async (): Promise<ApiResponse> => {
-    try {
-      const meta = await supabaseSyncService.fetchRemoteMeta();
-      return { success: true, data: meta };
-    } catch (err) {
-      return { success: false, error: { code: 'SUPABASE_REMOTE_META_ERROR', message: (err as Error).message } };
-    }
+    return { success: false, error: { code: 'OFFLINE_STANDALONE', message: 'Cloud sync disabled.' } };
   });
 }
 

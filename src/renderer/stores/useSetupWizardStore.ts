@@ -15,7 +15,7 @@ const initialSetupData: SetupWizardPayloadInput = {
   city: '',
   country: '',
   taxNumber: '',
-  currency: 'FCFA',
+  currency: 'USD',
   timezone: 'UTC',
   dateFormat: 'DD-MM-YYYY',
   timeFormat: '24h',

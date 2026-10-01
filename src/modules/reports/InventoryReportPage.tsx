@@ -33,26 +33,26 @@ export const InventoryReportPage: React.FC = () => {
     },
     {
       key: 'selling_price',
-      header: 'Retail Price (FCFA)',
+      header: 'Retail Price ($ USD)',
       render: (r) => <span>{formatCurrency(Number(r.selling_price))}</span>,
     },
     {
       key: 'total_retail_value',
-      header: 'Total Retail Value (FCFA)',
+      header: 'Total Retail Value ($ USD)',
       render: (r) => <span className="font-bold">{formatCurrency(Number(r.total_retail_value))}</span>,
     },
     ...(isOwner
       ? [
           {
             key: 'avg_cost',
-            header: 'Avg Cost (FCFA)',
+            header: 'Avg Cost ($ USD)',
             render: (r: Record<string, unknown>) => (
               <span>{formatCurrency(Number(r.avg_cost || 0))}</span>
             ),
           },
           {
             key: 'total_cost_value',
-            header: 'Total Cost Valuation (FCFA)',
+            header: 'Total Cost Valuation ($ USD)',
             render: (r: Record<string, unknown>) => (
               <span className="font-black text-emerald-600 dark:text-emerald-400">
                 {formatCurrency(Number(r.total_cost_value || 0))}

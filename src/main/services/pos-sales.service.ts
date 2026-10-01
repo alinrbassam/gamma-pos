@@ -90,8 +90,10 @@ export class POSSalesService {
         id, invoice_number, customer_id, customer_name, customer_phone, due_date, notes,
         subtotal, item_discount, order_discount,
         tax_total, grand_total, paid_amount, change_amount, payment_status,
-        payment_method, shift_id, cashier_id, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        payment_method, shift_id, cashier_id, created_at,
+        order_type, table_number, delivery_address, exchange_rate,
+        paid_usd, paid_lbp, change_usd, change_lbp
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const insertItem = this.db.prepare(`
@@ -130,6 +132,14 @@ export class POSSalesService {
         input.shiftId || null,
         cashierId || 'cashier',
         now,
+        input.orderType || 'dine_in',
+        input.tableNumber || null,
+        input.deliveryAddress || null,
+        input.exchangeRate || 89500,
+        input.paidUsd || 0,
+        input.paidLbp || 0,
+        input.changeUsd || 0,
+        input.changeLbp || 0,
       );
 
       for (const p of input.payments) {
