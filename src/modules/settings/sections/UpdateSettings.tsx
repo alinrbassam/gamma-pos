@@ -41,8 +41,14 @@ export const UpdateSettings: React.FC = () => {
   const isDownloaded = updateEvent?.status === 'downloaded';
   const isDownloading = updateEvent?.status === 'downloading';
   const hasUpdate = Boolean(updateStatus?.hasUpdate || updateEvent?.status === 'available' || isDownloaded);
-  const targetVersion = updateEvent?.version || updateStatus?.latestVersion || '1.0.1';
+  const targetVersion = updateEvent?.version || updateStatus?.latestVersion || '1.0.3';
   const progressPercent = updateEvent?.progress?.percent ?? 0;
+
+  useEffect(() => {
+    if (updateStatus?.hasUpdate && !isDownloaded && !isDownloading && !isLoading) {
+      downloadUpdate().catch(() => {});
+    }
+  }, [updateStatus?.hasUpdate, isDownloaded, isDownloading, isLoading, downloadUpdate]);
 
   const isAr = language === 'ar';
 

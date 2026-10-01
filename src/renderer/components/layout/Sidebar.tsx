@@ -261,7 +261,7 @@ export const Sidebar: React.FC = () => {
               <h2 className="text-sm font-black text-white tracking-wider flex items-center space-x-1 rtl:space-x-reverse">
                 <span>{language === 'ar' ? 'ابن خالتي' : 'Eben Khalti'}</span>
                 <span className="text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono px-1 py-0.2 rounded font-bold">
-                  v1.0.2
+                  v1.0.3
                 </span>
               </h2>
               <span className="text-[10px] text-slate-400 font-medium truncate block tracking-widest uppercase">

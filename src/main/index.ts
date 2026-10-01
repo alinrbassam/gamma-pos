@@ -111,10 +111,10 @@ app.whenReady().then(() => {
       dialog
         .showMessageBox({
           type: 'info',
-          title: 'Mise à jour prête / Update Ready',
-          message: `Une nouvelle version (${info.version}) de Gamma POS a été téléchargée avec succès.`,
-          detail: 'Voulez-vous redémarrer l’application maintenant pour appliquer la mise à jour ?',
-          buttons: ['Redémarrer maintenant', 'Plus tard'],
+          title: 'Update Ready',
+          message: `A new version (v${info.version}) of Eben Khalti has been downloaded successfully.`,
+          detail: 'Would you like to restart the application now to replace the current version? All your sales, tables, and settings will remain completely intact.',
+          buttons: ['Restart and Replace Now', 'Later'],
           defaultId: 0,
           cancelId: 1,
         })

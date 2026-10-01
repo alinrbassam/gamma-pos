@@ -16,12 +16,9 @@ publish:
 win:
   icon: build/icon.ico
   forceCodeSigning: false
-  artifactName: "Gamma POS Setup ${version}.${ext}"
+  artifactName: "Gamma-POS-Setup-${version}.${ext}"
   target:
     - target: nsis
-      arch:
-        - x64
-    - target: portable
       arch:
         - x64
 

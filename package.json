@@ -1,7 +1,7 @@
 {
   "name": "gamma-pos",
   "productName": "Gamma POS",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/alinrbassam/gamma-pos.git"
