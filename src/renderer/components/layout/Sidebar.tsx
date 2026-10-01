@@ -23,6 +23,7 @@ import {
   BarChart2,
   Gamepad2,
   UtensilsCrossed,
+  Coffee,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -252,15 +253,15 @@ export const Sidebar: React.FC = () => {
         } bg-[#0A0B0E]`}
       >
         <div className="flex items-center space-x-2.5 rtl:space-x-reverse min-w-0">
-          <div className="h-9 w-9 bg-gradient-to-tr from-[#9B2810] via-[#C83818] to-[#E25534] rounded-xl flex items-center justify-center font-black text-white text-base shadow-md shadow-[#C83818]/30 shrink-0">
-            <UtensilsCrossed className="h-5 w-5 text-white" />
+          <div className="h-9 w-9 bg-gradient-to-tr from-[#78350F] via-[#B45309] to-[#F59E0B] rounded-xl flex items-center justify-center font-black text-white text-base shadow-md shadow-[#B45309]/30 shrink-0">
+            <Coffee className="h-5 w-5 text-white" />
           </div>
           {!isCollapsed && (
             <div className="min-w-0 truncate">
               <h2 className="text-sm font-black text-white tracking-wider flex items-center space-x-1 rtl:space-x-reverse">
                 <span>{language === 'ar' ? 'ابن خالتي' : 'Eben Khalti'}</span>
-                <span className="text-[9px] bg-[#C83818]/25 text-[#E25534] border border-[#C83818]/40 font-mono px-1 py-0.2 rounded font-bold">
-                  v1.0.1
+                <span className="text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono px-1 py-0.2 rounded font-bold">
+                  v1.0.2
                 </span>
               </h2>
               <span className="text-[10px] text-slate-400 font-medium truncate block tracking-widest uppercase">
