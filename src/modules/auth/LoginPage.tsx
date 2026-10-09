@@ -8,7 +8,7 @@ import { Button } from '@components/ui/Button';
 import { Alert } from '@components/ui/Alert';
 import { Tabs } from '@components/ui/Tabs';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Flame } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -124,15 +124,15 @@ export const LoginPage: React.FC = () => {
       <div className="max-w-md w-full bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl space-y-6">
         <div className="flex items-center justify-between border-b border-slate-700 pb-4">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            <div className="h-10 w-10 bg-gradient-to-tr from-sky-500 via-cyan-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-cyan-500/25">
-              G
+            <div className="h-10 w-10 bg-gradient-to-tr from-[#EA580C] via-[#F97316] to-[#FDE047] rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-500/25">
+              <Flame className="h-6 w-6 text-white" />
             </div>
             <div>
               <h2 className="text-base font-black text-white tracking-wide">
-                {language === 'ar' ? 'نظام غاما' : 'Gamma POS'}
+                {language === 'ar' ? 'ابن خالتي' : 'Eben Khalti'}
               </h2>
-              <span className="text-[10px] text-cyan-400 font-medium block">
-                {language === 'ar' ? 'نظام إدارة المبيعات والمخزون' : 'POS & Retail System'}
+              <span className="text-[10px] text-amber-400 font-medium block">
+                {language === 'ar' ? 'كافيه وشيشة ولاونج' : 'Café & Shisha Lounge'}
               </span>
             </div>
           </div>

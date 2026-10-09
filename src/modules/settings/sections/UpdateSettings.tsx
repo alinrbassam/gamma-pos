@@ -41,7 +41,7 @@ export const UpdateSettings: React.FC = () => {
   const isDownloaded = updateEvent?.status === 'downloaded';
   const isDownloading = updateEvent?.status === 'downloading';
   const hasUpdate = Boolean(updateStatus?.hasUpdate || updateEvent?.status === 'available' || isDownloaded);
-  const targetVersion = updateEvent?.version || updateStatus?.latestVersion || '1.0.3';
+  const targetVersion = updateEvent?.version || updateStatus?.latestVersion || '1.0.4';
   const progressPercent = updateEvent?.progress?.percent ?? 0;
 
   useEffect(() => {

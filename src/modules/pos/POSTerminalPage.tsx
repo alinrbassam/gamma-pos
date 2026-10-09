@@ -6,11 +6,11 @@ import { useLanguageStore } from '@stores/useLanguageStore';
 import { useZoomStore } from '@stores/useZoomStore';
 import { useExchangeRateStore } from '@stores/useExchangeRateStore';
 import { SalesOrderEntity, ProductEntity, HookahFlavorEntity } from '@shared/types';
-import { Button } from '@components/ui/Button';
 import { POSPaymentModal } from './POSPaymentModal';
 import { POSHoldResumeModal } from './POSHoldResumeModal';
 import { POSHoldSaveModal } from './POSHoldSaveModal';
 import { ThermalReceiptModal } from './ThermalReceiptModal';
+import { POSTouchNumpad } from './POSTouchNumpad';
 import { formatUSD, formatLBP } from '../../renderer/utils/currency';
 import {
   Search,
@@ -20,7 +20,6 @@ import {
   Minus,
   PauseCircle,
   PlayCircle,
-  CreditCard,
   RotateCcw,
   Tag,
   UtensilsCrossed,
@@ -69,8 +68,30 @@ export const POSTerminalPage: React.FC = () => {
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [showHoldSaveModal, setShowHoldSaveModal] = useState(false);
   const [lastCompletedSale, setLastCompletedSale] = useState<SalesOrderEntity | null>(null);
+  const [selectedCartIdx, setSelectedCartIdx] = useState<number | null>(null);
+
+  // Keep selected cart item in sync with cart changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      if (selectedCartIdx === null || selectedCartIdx >= cart.length) {
+        setSelectedCartIdx(cart.length - 1);
+      }
+    } else {
+      setSelectedCartIdx(null);
+    }
+  }, [cart.length, selectedCartIdx]);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAddToCart = (product: ProductEntity, qty = 1.0) => {
+    const existingIdx = cart.findIndex((item) => item.product.id === product.id);
+    addToCart(product, qty);
+    if (existingIdx >= 0) {
+      setSelectedCartIdx(existingIdx);
+    } else {
+      setSelectedCartIdx(cart.length);
+    }
+  };
 
   useEffect(() => {
     loadProducts('');
@@ -129,7 +150,7 @@ export const POSTerminalPage: React.FC = () => {
       tax_rate: 0,
     } as any;
 
-    addToCart(mockProduct, 1.0);
+    handleAddToCart(mockProduct, 1.0);
   };
 
   useEffect(() => {
@@ -305,6 +326,48 @@ export const POSTerminalPage: React.FC = () => {
     const sale = await checkout(payments, user?.id, customerInfo, cafeteriaInfo);
     if (sale) {
       setShowPaymentModal(false);
+      setLastCompletedSale(sale);
+    } else {
+      const err = usePOSStore.getState().error;
+      if (err) {
+        alert(language === 'ar' ? `خطأ أثناء الدفع: ${err}` : `Payment error: ${err}`);
+      }
+    }
+  };
+
+  const handleFastPayAndPrint = async (
+    paidUsd: number,
+    paidLbp: number,
+    changeUsd: number,
+    changeLbp: number,
+  ) => {
+    if (cart.length === 0 || isLoading) return;
+
+    const paymentList = [
+      {
+        paymentMethod: 'Cash',
+        amount: totals.grandTotal,
+      },
+    ];
+
+    const customerInfo = orderType === 'delivery' ? {
+      customerName: deliveryCustomerName || 'Delivery Customer',
+      customerPhone: deliveryPhone,
+    } : undefined;
+
+    const cafeteriaInfo = {
+      orderType,
+      tableNumber: orderType === 'dine_in' ? tableNumber : undefined,
+      deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
+      exchangeRate: usdToLbpRate,
+      paidUsd,
+      paidLbp,
+      changeUsd,
+      changeLbp,
+    };
+
+    const sale = await checkout(paymentList, user?.id, customerInfo, cafeteriaInfo);
+    if (sale) {
       setLastCompletedSale(sale);
     } else {
       const err = usePOSStore.getState().error;
@@ -574,7 +637,7 @@ export const POSTerminalPage: React.FC = () => {
               return (
                 <div
                   key={p.id}
-                  onClick={() => addToCart(p, 1.0)}
+                  onClick={() => handleAddToCart(p, 1.0)}
                   className="group relative bg-white dark:bg-[#141518] hover:bg-[#C83818]/5 dark:hover:bg-[#1A1C21] border border-slate-200 dark:border-[#21242B] hover:border-[#C83818]/60 dark:hover:border-[#C83818]/60 p-3.5 rounded-2xl cursor-pointer transition-all flex flex-col justify-between space-y-2.5 select-none active:scale-[0.98] shadow-xs hover:shadow-md"
                 >
                   <div>
@@ -613,7 +676,7 @@ export const POSTerminalPage: React.FC = () => {
       </div>
 
       {/* RIGHT PANEL: Shopping Cart & Direct Checkout */}
-      <div className="w-full md:w-[320px] lg:w-[360px] xl:w-[400px] bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] rounded-3xl flex flex-col min-w-0 shadow-xs overflow-hidden">
+      <div className="w-full md:w-[380px] lg:w-[420px] xl:w-[460px] bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] rounded-3xl flex flex-col min-w-0 shadow-xs overflow-hidden">
         {/* Cart Header */}
         <div className="p-3.5 border-b border-slate-200 dark:border-[#21242B] flex justify-between items-center bg-slate-50/80 dark:bg-[#1A1C21]/60">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -644,21 +707,32 @@ export const POSTerminalPage: React.FC = () => {
           )}
         </div>
 
-        {/* Cart Line Items (No per-item discount per user rule) */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {/* Cart Line Items (Click to select for Touch Numpad) */}
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-[140px]">
           {cart.map((item, idx) => {
             const lineSubUsd = item.quantity * item.unitPrice;
             const lineSubLbp = Math.round(lineSubUsd * usdToLbpRate);
+            const isSelected = selectedCartIdx === idx;
 
             return (
               <div
                 key={idx}
-                className="p-3 bg-slate-50/70 dark:bg-[#1A1C21]/60 hover:bg-slate-50 dark:hover:bg-[#1A1C21] border border-slate-200 dark:border-[#282C35] rounded-2xl space-y-2 text-xs transition-colors"
+                onClick={() => setSelectedCartIdx(idx)}
+                className={`p-2.5 rounded-2xl space-y-1.5 text-xs transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-amber-500/10 dark:bg-amber-500/15 border-2 border-amber-500 shadow-xs'
+                    : 'bg-slate-50/70 dark:bg-[#1A1C21]/60 hover:bg-slate-50 dark:hover:bg-[#1A1C21] border border-slate-200 dark:border-[#282C35]'
+                }`}
               >
                 <div className="flex justify-between items-center font-bold gap-1.5">
-                  <span className="flex-1 min-w-0 truncate text-slate-900 dark:text-slate-100 font-bold">
-                    {language === 'ar' ? item.product.name_ar || item.product.name_en : item.product.name_en}
-                  </span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {isSelected && (
+                      <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 animate-pulse" />
+                    )}
+                    <span className="truncate text-slate-900 dark:text-slate-100 font-bold">
+                      {language === 'ar' ? item.product.name_ar || item.product.name_en : item.product.name_en}
+                    </span>
+                  </div>
                   <div className="text-right shrink-0">
                     <span className="text-emerald-600 dark:text-emerald-400 font-mono text-xs sm:text-sm font-bold block">
                       {formatUSD(lineSubUsd)}
@@ -669,14 +743,16 @@ export const POSTerminalPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Quantity & Unit Price Controls (NO item discount) */}
-                <div className="flex items-center justify-between gap-1 pt-1">
+                {/* Quantity & Unit Price Controls */}
+                <div className="flex items-center justify-between gap-1 pt-0.5">
                   <div className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-xl p-0.5 border border-slate-200 dark:border-[#282C35] shadow-xs">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         const isKg = item.product.base_unit_id === 'Kg' && item.product.allow_decimal_qty === 1;
                         const min = isKg ? 0.05 : 1;
                         updateCartItem(idx, 'quantity', Math.max(min, Math.round((item.quantity - 1) * 100) / 100));
+                        setSelectedCartIdx(idx);
                       }}
                       className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg transition-colors"
                       title="-1"
@@ -689,9 +765,11 @@ export const POSTerminalPage: React.FC = () => {
                         step={item.product.base_unit_id === 'Kg' ? 'any' : '1'}
                         min={item.product.base_unit_id === 'Kg' ? '0.05' : '1'}
                         value={item.quantity}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => {
                           const val = parseFloat(e.target.value);
                           updateCartItem(idx, 'quantity', isNaN(val) ? 0 : val);
+                          setSelectedCartIdx(idx);
                         }}
                         className="w-11 text-center bg-transparent font-bold font-mono focus:outline-none text-slate-900 dark:text-slate-100 text-[11px]"
                       />
@@ -700,9 +778,11 @@ export const POSTerminalPage: React.FC = () => {
                       </span>
                     </div>
                     <button
-                      onClick={() =>
-                        updateCartItem(idx, 'quantity', Math.round((item.quantity + 1) * 100) / 100)
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateCartItem(idx, 'quantity', Math.round((item.quantity + 1) * 100) / 100);
+                        setSelectedCartIdx(idx);
+                      }}
                       className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg transition-colors"
                       title="+1"
                     >
@@ -714,6 +794,7 @@ export const POSTerminalPage: React.FC = () => {
                   <div
                     className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-xl px-1.5 py-1 border border-slate-200 dark:border-[#282C35] hover:border-emerald-500 transition-colors shadow-xs"
                     title={language === 'ar' ? 'سعر الوحدة ($)' : 'Unit price in USD ($)'}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <span className="text-[10px] text-slate-400 font-bold">$</span>
                     <input
@@ -729,7 +810,10 @@ export const POSTerminalPage: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => removeFromCart(idx)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFromCart(idx);
+                    }}
                     className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -740,7 +824,7 @@ export const POSTerminalPage: React.FC = () => {
           })}
 
           {cart.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 py-16">
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
               <div className="p-4 rounded-3xl bg-slate-100 dark:bg-[#1A1C21] border border-slate-200 dark:border-[#282C35] mb-3">
                 <Coffee className="h-10 w-10 text-[#DF7E63]" />
               </div>
@@ -753,88 +837,77 @@ export const POSTerminalPage: React.FC = () => {
           )}
         </div>
 
-        {/* Cart Totals & Checkout Button */}
-        <div className="p-4 border-t border-slate-200 dark:border-[#21242B] space-y-3 bg-slate-50/80 dark:bg-[#141518]">
-          <div className="space-y-1.5 text-xs">
-            <div className="flex justify-between text-slate-500 dark:text-slate-400">
-              <span>{language === 'ar' ? 'المجموع الفرعي:' : 'Subtotal:'}</span>
-              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                {formatUSD(totals.subtotal)}
-              </span>
-            </div>
-
-            {/* Discount on Total Receipt ONLY */}
-            <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
-              <span>{language === 'ar' ? 'خصم الفاتورة ($):' : 'Receipt Discount ($):'}</span>
-              <div className="flex items-center space-x-1">
-                <span className="text-[11px] text-amber-500 font-bold">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={orderDiscount}
-                  onChange={(e) => setOrderDiscount(parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
-                  className="w-16 px-1.5 py-0.5 text-right bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-lg text-xs text-amber-600 font-mono font-bold focus:outline-none focus:border-amber-500"
-                />
-              </div>
-            </div>
-
-            {/* Grand Total in USD and LBP */}
-            <div className="pt-2 border-t border-slate-200 dark:border-[#21242B]">
-              <div className="flex justify-between items-baseline">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {language === 'ar' ? 'الإجمالي بالدولار:' : 'Total (USD):'}
-                </span>
-                <span className="font-mono text-xl font-black text-[#DF7E63]">
-                  {formatUSD(totals.grandTotal)}
-                </span>
-              </div>
-              <div className="flex justify-between items-baseline pt-0.5">
-                <span className="text-[11px] text-slate-400 font-semibold">
-                  {language === 'ar' ? 'الإجمالي بالليرة:' : 'Total (LBP):'}
-                </span>
-                <span className="font-mono text-sm font-bold text-slate-700 dark:text-slate-300">
-                  {formatLBP(totals.grandTotalLbp)}
-                </span>
-              </div>
-            </div>
+        {/* Compact Discount & Hold/Resume Row */}
+        <div className="px-3 py-1.5 bg-slate-50/90 dark:bg-[#14161A] border-t border-slate-200 dark:border-[#21242B] flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-slate-500 font-semibold">{language === 'ar' ? 'خصم ($):' : 'Disc ($):'}</span>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              value={orderDiscount}
+              onChange={(e) => setOrderDiscount(parseFloat(e.target.value) || 0)}
+              placeholder="0.00"
+              className="w-14 px-1.5 py-0.5 text-center bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-lg text-xs text-amber-600 font-mono font-bold focus:outline-none focus:border-amber-500"
+            />
           </div>
-
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <Button
-              variant="outline"
+          <div className="flex items-center gap-1">
+            <button
               disabled={cart.length === 0}
               onClick={handleHoldSale}
-              className="text-xs border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 rounded-xl"
+              className="px-2 py-1 text-[11px] font-bold rounded-lg border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 disabled:opacity-40"
+              title={language === 'ar' ? 'تعليق الطلب الحالي' : 'Hold Current Order'}
             >
-              <PauseCircle className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
-              <span>{language === 'ar' ? 'تعليق الطلب' : 'Hold Order'}</span>
-            </Button>
-
-            <Button
-              variant="outline"
+              <PauseCircle className="h-3.5 w-3.5 inline mr-1 rtl:mr-0 rtl:ml-1" />
+              <span>{language === 'ar' ? 'تعليق' : 'Hold'}</span>
+            </button>
+            <button
               onClick={() => setShowHoldModal(true)}
-              className="text-xs border-slate-300 dark:border-[#282C35] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-xl"
+              className="px-2 py-1 text-[11px] font-bold rounded-lg border border-slate-300 dark:border-[#282C35] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1A1C21]"
+              title={language === 'ar' ? 'استئناف الطلبات المعلقة' : 'Resume Held Orders'}
             >
-              <PlayCircle className="h-4 w-4 mr-1 rtl:mr-0 rtl:ml-1" />
+              <PlayCircle className="h-3.5 w-3.5 inline mr-1 rtl:mr-0 rtl:ml-1" />
               <span>{language === 'ar' ? 'استئناف' : 'Resume'}</span>
-            </Button>
+            </button>
           </div>
-
-          <Button
-            disabled={cart.length === 0 || isLoading}
-            onClick={() => setShowPaymentModal(true)}
-            className="w-full py-3.5 bg-[#C83818] hover:bg-[#A72B11] text-white font-black text-sm rounded-2xl shadow-lg shadow-[#C83818]/25 flex items-center justify-center space-x-2 rtl:space-x-reverse active:scale-[0.99] transition-all disabled:opacity-50"
-          >
-            <CreditCard className="h-5 w-5" />
-            <span>
-              {language === 'ar'
-                ? `دفع الحساب (${formatUSD(totals.grandTotal)})`
-                : `Pay Order (${formatUSD(totals.grandTotal)})`}
-            </span>
-          </Button>
         </div>
+
+        {/* Touchpad Numpad, Dual-Currency Display, and 1-Tap Checkout */}
+        <POSTouchNumpad
+          selectedItem={selectedCartIdx !== null ? cart[selectedCartIdx] || null : null}
+          selectedItemIndex={selectedCartIdx}
+          onUpdateQuantity={(newQty) => {
+            if (selectedCartIdx !== null && cart[selectedCartIdx]) {
+              updateCartItem(selectedCartIdx, 'quantity', newQty);
+            }
+          }}
+          onIncrement={() => {
+            if (selectedCartIdx !== null && cart[selectedCartIdx]) {
+              const current = cart[selectedCartIdx].quantity;
+              updateCartItem(selectedCartIdx, 'quantity', current + 1);
+            }
+          }}
+          onDecrement={() => {
+            if (selectedCartIdx !== null && cart[selectedCartIdx]) {
+              const current = cart[selectedCartIdx].quantity;
+              const isKg = cart[selectedCartIdx].product.base_unit_id === 'Kg';
+              const min = isKg ? 0.05 : 1;
+              updateCartItem(selectedCartIdx, 'quantity', Math.max(min, current - 1));
+            }
+          }}
+          onRemoveItem={() => {
+            if (selectedCartIdx !== null) {
+              removeFromCart(selectedCartIdx);
+            }
+          }}
+          grandTotalUsd={totals.grandTotal}
+          grandTotalLbp={totals.grandTotalLbp}
+          usdToLbpRate={usdToLbpRate}
+          onFastPayAndPrint={handleFastPayAndPrint}
+          onOpenDetailedPayment={() => setShowPaymentModal(true)}
+          cartEmpty={cart.length === 0}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Modals */}

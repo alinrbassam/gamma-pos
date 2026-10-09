@@ -39,7 +39,7 @@ export const ThermalReceiptModal: React.FC<Props> = ({
 
   if (!isOpen || !sale) return null;
 
-  const defaultStoreName = language === 'ar' ? 'كافيتيريا غاما' : 'Gamma Cafeteria';
+  const defaultStoreName = language === 'ar' ? 'ابن خالتي (كافيه وشيشة)' : 'Eben Khalti (Café & Shisha)';
   const defaultAddress = language === 'ar' ? 'الفرع الرئيسي' : 'Main Branch';
 
   const storeTitle = businessName || defaultStoreName;
