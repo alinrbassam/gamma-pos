@@ -19,6 +19,7 @@ import {
   Users,
   Gamepad2,
   Zap,
+  Lock,
 } from 'lucide-react';
 import { useLanguageStore } from '../../renderer/stores/useLanguageStore';
 import { useAuthStore } from '../../renderer/stores/useAuthStore';
@@ -646,11 +647,25 @@ export const TablesPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3">
           {/* Rate Button */}
           <button
-            onClick={() => setIsRatesModalOpen(true)}
+            onClick={() => {
+              if (activeRoleMode === 'cashier') {
+                setManagerUnlockModalOpen(true);
+              } else {
+                setIsRatesModalOpen(true);
+              }
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-[#1C1F26] border border-slate-300 dark:border-[#282C35] rounded-xl text-xs font-mono font-bold text-slate-700 dark:text-slate-300 hover:border-[#C83818] transition-colors"
+            title={
+              activeRoleMode === 'manager'
+                ? (language === 'ar' ? 'تعديل أسعار الصرف والبلايستيشن' : 'Configure USD & PlayStation rates')
+                : (language === 'ar' ? 'سعر الصرف (يلزم رمز المدير للتعديل)' : 'Exchange Rate (Manager PIN required to edit)')
+            }
           >
             <span>💵 $1 =</span>
             <span className="text-[#C83818] font-black">{formatLBP(usdToLbpRate)}</span>
+            {activeRoleMode === 'cashier' && (
+              <Lock className="w-3 h-3 text-slate-400 ml-1 rtl:ml-0 rtl:mr-1" />
+            )}
           </button>
 
           {/* Manager: Manage Tables Button */}

@@ -12,9 +12,11 @@ import {
   X,
   Sliders,
   UtensilsCrossed,
+  Lock,
 } from 'lucide-react';
 import { ExchangeRateModal } from '../../renderer/components/rates/ExchangeRateModal';
 import { useLanguageStore } from '../../renderer/stores/useLanguageStore';
+import { useAuthStore } from '../../renderer/stores/useAuthStore';
 import { useExchangeRateStore } from '../../renderer/stores/useExchangeRateStore';
 import { useProductStore } from '../../renderer/stores/useProductStore';
 import { formatUSD, formatLBP } from '../../renderer/utils/currency';
@@ -53,6 +55,7 @@ interface ActiveSession {
 
 export const PlaystationPage: React.FC = () => {
   const { language } = useLanguageStore();
+  const { activeRoleMode, setManagerUnlockModalOpen } = useAuthStore();
   const { usdToLbpRate, ratePerPlayerHourLbp } = useExchangeRateStore();
   const { products, loadProducts } = useProductStore();
 
@@ -423,12 +426,25 @@ export const PlaystationPage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setIsRatesModalOpen(true)}
+            onClick={() => {
+              if (activeRoleMode === 'cashier') {
+                setManagerUnlockModalOpen(true);
+              } else {
+                setIsRatesModalOpen(true);
+              }
+            }}
             className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white dark:bg-[#1A1C21] hover:bg-slate-100 dark:hover:bg-[#252833] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#282C35] rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
-            title={language === 'ar' ? 'تعديل أسعار البلايستيشن وسعر الصرف' : 'Edit PlayStation & Exchange Rates'}
+            title={
+              activeRoleMode === 'manager'
+                ? (language === 'ar' ? 'تعديل أسعار البلايستيشن وسعر الصرف' : 'Edit PlayStation & Exchange Rates')
+                : (language === 'ar' ? 'تعديل الأسعار (يلزم رمز المدير)' : 'Edit Rates (Manager PIN required)')
+            }
           >
             <Sliders className="w-4 h-4 text-[#C83818]" />
             <span>{language === 'ar' ? 'تعديل الأسعار' : 'Edit Rates'}</span>
+            {activeRoleMode === 'cashier' && (
+              <Lock className="w-3.5 h-3.5 text-slate-400 ml-0.5 rtl:ml-0 rtl:mr-0.5" />
+            )}
           </button>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Gamepad2, X, Check, AlertCircle } from 'lucide-react';
+import { DollarSign, Gamepad2, X, Check, AlertCircle, Lock } from 'lucide-react';
 import { useExchangeRateStore } from '../../stores/useExchangeRateStore';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 import { formatLBP } from '../../utils/currency';
 
 interface ExchangeRateModalProps {
@@ -10,6 +12,9 @@ interface ExchangeRateModalProps {
 
 export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({ isOpen, onClose }) => {
   const { usdToLbpRate, ratePerPlayerHourLbp, updateRates, fetchRates } = useExchangeRateStore();
+  const { activeRoleMode, setManagerUnlockModalOpen } = useAuthStore();
+  const { language } = useLanguageStore();
+
   const [dollarRate, setDollarRate] = useState<string>(String(usdToLbpRate));
   const [psRate, setPsRate] = useState<string>(String(ratePerPlayerHourLbp));
   const [isSaving, setIsSaving] = useState(false);
@@ -31,6 +36,16 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({ isOpen, on
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (activeRoleMode !== 'manager') {
+      setError(
+        language === 'ar'
+          ? 'عذراً! يلزم إدخال رمز المدير لتعديل وحفظ أسعار الصرف والبلايستيشن.'
+          : 'Manager authorization is required to modify exchange rates and PlayStation pricing.',
+      );
+      setManagerUnlockModalOpen(true);
+      return;
+    }
 
     const parsedDollar = parseFloat(dollarRate);
     const parsedPs = parseFloat(psRate);
@@ -92,6 +107,26 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({ isOpen, on
 
         {/* Content */}
         <form onSubmit={handleSave} className="p-6 space-y-5">
+          {activeRoleMode !== 'manager' && (
+            <div className="flex items-center justify-between p-3 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 rounded-xl text-xs text-amber-800 dark:text-amber-200">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <span className="font-semibold">
+                  {language === 'ar'
+                    ? 'وضع الكاشير: يلزم إدخال رمز المدير لتعديل أسعار الصرف والبلايستيشن.'
+                    : 'Cashier Mode: Manager PIN required to edit exchange rates.'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setManagerUnlockModalOpen(true)}
+                className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold rounded-lg shrink-0 text-[11px] transition-all ml-2 rtl:ml-0 rtl:mr-2 shadow-xs"
+              >
+                {language === 'ar' ? 'إدخال رمز المدير' : 'Enter Manager PIN'}
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="flex items-center gap-2 p-3 text-xs text-rose-700 bg-rose-50 dark:bg-rose-950/50 dark:text-rose-300 rounded-xl border border-rose-200 dark:border-rose-800">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -118,10 +153,13 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({ isOpen, on
               <input
                 type="number"
                 step="any"
+                disabled={activeRoleMode !== 'manager'}
                 value={dollarRate}
                 onChange={(e) => setDollarRate(e.target.value)}
                 placeholder="89500"
-                className="w-full pl-12 pr-14 py-2.5 bg-slate-50 dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-slate-800 dark:text-slate-100 font-bold focus:ring-2 focus:ring-[#C83818] focus:border-[#C83818] focus:outline-none"
+                className={`w-full pl-12 pr-14 py-2.5 bg-slate-50 dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-slate-800 dark:text-slate-100 font-bold focus:ring-2 focus:ring-[#C83818] focus:border-[#C83818] focus:outline-none ${
+                  activeRoleMode !== 'manager' ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-[#1A1C21]' : ''
+                }`}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs font-semibold">
                 L.L
@@ -142,10 +180,13 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({ isOpen, on
               <input
                 type="number"
                 step="1000"
+                disabled={activeRoleMode !== 'manager'}
                 value={psRate}
                 onChange={(e) => setPsRate(e.target.value)}
                 placeholder="200000"
-                className="w-full px-3 pr-14 py-2.5 bg-slate-50 dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-slate-800 dark:text-slate-100 font-bold focus:ring-2 focus:ring-[#C83818] focus:border-[#C83818] focus:outline-none"
+                className={`w-full px-3 pr-14 py-2.5 bg-slate-50 dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-slate-800 dark:text-slate-100 font-bold focus:ring-2 focus:ring-[#C83818] focus:border-[#C83818] focus:outline-none ${
+                  activeRoleMode !== 'manager' ? 'opacity-60 cursor-not-allowed bg-slate-100 dark:bg-[#1A1C21]' : ''
+                }`}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-xs font-semibold">
                 L.L / hr
@@ -190,15 +231,32 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({ isOpen, on
               onClick={onClose}
               className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-xl transition-colors"
             >
-              Cancel
+              {language === 'ar' ? 'إلغاء' : 'Cancel'}
             </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-5 py-2 text-xs font-bold text-white bg-[#C83818] hover:bg-[#A72B11] disabled:opacity-50 rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
-            >
-              {isSaving ? 'Saving...' : 'Save Rates'}
-            </button>
+            {activeRoleMode === 'manager' ? (
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-5 py-2 text-xs font-bold text-white bg-[#C83818] hover:bg-[#A72B11] disabled:opacity-50 rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
+              >
+                {isSaving
+                  ? language === 'ar'
+                    ? 'جارٍ الحفظ...'
+                    : 'Saving...'
+                  : language === 'ar'
+                  ? 'حفظ الأسعار'
+                  : 'Save Rates'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setManagerUnlockModalOpen(true)}
+                className="px-4 py-2 text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <span>{language === 'ar' ? 'يلزم إذن المدير للحفظ' : 'Manager Authorization Required'}</span>
+              </button>
+            )}
           </div>
         </form>
       </div>
