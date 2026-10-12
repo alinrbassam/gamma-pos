@@ -89,7 +89,14 @@ app.whenReady().then(() => {
       });
     });
 
+    let lastProgressTime = 0;
     autoUpdater.on('download-progress', (progress) => {
+      const now = Date.now();
+      // Throttle IPC events to at most once every 500ms so renderer thread is never starved
+      if (now - lastProgressTime < 500 && progress.percent < 100) {
+        return;
+      }
+      lastProgressTime = now;
       mainWindow.webContents.send(IPC_CHANNELS.UPDATER_STATUS_EVENT, {
         status: 'downloading',
         progress: {

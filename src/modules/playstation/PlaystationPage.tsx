@@ -178,13 +178,21 @@ export const PlaystationPage: React.FC = () => {
     loadProducts('');
   }, []);
 
-  // Live timer tick every 1000ms
+  const isAnyModalOpen = Boolean(
+    addingItemSessionId ||
+    checkingOutSession ||
+    sendingToTableSession ||
+    isRatesModalOpen
+  );
+
+  // Live timer tick every 1000ms (paused while any modal is open so typing is never interrupted)
   useEffect(() => {
+    if (isAnyModalOpen) return;
     const timer = setInterval(() => {
       setNow(Date.now());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isAnyModalOpen]);
 
   // Format seconds to HH:MM:SS
   const formatStopwatch = (seconds: number) => {

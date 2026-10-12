@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   UtensilsCrossed,
   Plus,
@@ -150,12 +150,37 @@ export const TablesPage: React.FC = () => {
   const [hookahSearch, setHookahSearch] = useState('');
   const [hookahNotice, setHookahNotice] = useState<string | null>(null);
 
-  // Live timer tick (paused while managing tables so typing is never interrupted)
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+
+  const isAnyModalOpen = Boolean(
+    openingTable ||
+    addingToTab ||
+    transferringTab ||
+    mergingTab ||
+    checkingOutTab ||
+    isReceiptOpen ||
+    isManageTablesOpen ||
+    hookahModalTab ||
+    isRatesModalOpen
+  );
+
+  // Live timer tick (paused while any modal is open so typing and focus are never interrupted)
   useEffect(() => {
-    if (isManageTablesOpen) return;
+    if (isAnyModalOpen) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [isManageTablesOpen]);
+  }, [isAnyModalOpen]);
+
+  // Instantly focus phone input when Open Tab modal appears
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    if (openingTable) {
+      t = setTimeout(() => phoneInputRef.current?.focus(), 50);
+    }
+    return () => {
+      if (t) clearTimeout(t);
+    };
+  }, [openingTable]);
 
   const loadHookahFlavors = useCallback(async () => {
     try {
@@ -1103,6 +1128,7 @@ export const TablesPage: React.FC = () => {
                 </label>
                 <div className="relative">
                   <input
+                    ref={phoneInputRef}
                     type="text"
                     value={openCustomerPhone}
                     onChange={(e) => setOpenCustomerPhone(e.target.value)}
@@ -1134,7 +1160,7 @@ export const TablesPage: React.FC = () => {
                   type="text"
                   value={openCustomerName}
                   onChange={(e) => setOpenCustomerName(e.target.value)}
-                  placeholder={language === 'ar' ? 'مثال: علي بسام' : 'e.g. Ali Bassam'}
+                  placeholder={language === 'ar' ? 'مثال: زبون طاولة' : 'e.g. Customer Name'}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#C83818]"
                 />
               </div>

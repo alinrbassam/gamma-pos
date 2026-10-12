@@ -33,6 +33,12 @@ body {
   color: #f3f4f6;
 }
 
+input,
+textarea {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
 /* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
