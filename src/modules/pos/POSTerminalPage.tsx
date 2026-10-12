@@ -846,28 +846,50 @@ export const POSTerminalPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Price per Unit in USD & L.L. */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-slate-400 font-mono font-bold" title="Unit Price in L.L.">
-                      {formatLBP(Math.round(item.unitPrice * usdToLbpRate))}
-                    </span>
+                  {/* Price per Unit in LBP (Primary Editable) & USD (Secondary Calculated) */}
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                     <div
-                      className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-lg px-1.5 py-0.5 border border-slate-200 dark:border-[#282C35] hover:border-emerald-500 transition-colors shadow-xs"
-                      title={language === 'ar' ? 'سعر الوحدة بالدولار' : 'Unit price in USD ($)'}
-                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center space-x-1 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-lg px-2 py-0.5 border border-slate-200 dark:border-[#282C35] hover:border-emerald-500 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-colors shadow-xs"
+                      title={language === 'ar' ? 'تعديل سعر الصنف بالليرة اللبنانية' : 'Edit unit price in LBP'}
                     >
-                      <span className="text-[9px] text-slate-400 font-bold">$</span>
                       <input
-                        type="number"
-                        step="any"
-                        min="0"
-                        value={item.unitPrice}
-                        onChange={(e) =>
-                          updateCartItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)
-                        }
-                        className="w-10 text-center bg-transparent font-bold font-mono focus:outline-none text-emerald-600 dark:text-emerald-400 text-[10px]"
+                        type="text"
+                        inputMode="numeric"
+                        value={Math.round(item.unitPrice * usdToLbpRate).toLocaleString('en-US')}
+                        onFocus={(e) => {
+                          setSelectedCartIdx(idx);
+                          setNumpadResetTrigger((prev) => prev + 1);
+                          e.currentTarget.select();
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCartIdx(idx);
+                          setNumpadResetTrigger((prev) => prev + 1);
+                          e.currentTarget.select();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '');
+                          const lbp = parseInt(digits, 10) || 0;
+                          const usd = usdToLbpRate > 0 ? lbp / usdToLbpRate : 0;
+                          updateCartItem(idx, 'unitPrice', usd);
+                          setSelectedCartIdx(idx);
+                        }}
+                        className="w-16 sm:w-20 text-center bg-transparent font-black font-mono focus:outline-none text-emerald-600 dark:text-emerald-400 text-[11px]"
                       />
+                      <span className="text-[9px] text-slate-400 font-bold select-none">L.L</span>
                     </div>
+
+                    <span
+                      className="text-[10px] text-slate-400 font-mono font-bold select-none"
+                      title={language === 'ar' ? 'المعادل بالدولار' : 'Equivalent in USD'}
+                    >
+                      ${item.unitPrice.toFixed(2)}
+                    </span>
                   </div>
 
                   <button
@@ -911,6 +933,11 @@ export const POSTerminalPage: React.FC = () => {
               placeholder="0.00"
               className="w-14 px-1.5 py-0.5 text-center bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-lg text-xs text-amber-600 font-mono font-bold focus:outline-none focus:border-amber-500"
             />
+            {orderDiscount > 0 && (
+              <span className="text-[10px] text-amber-500 font-mono font-bold">
+                ({formatLBP(Math.round(orderDiscount * usdToLbpRate))})
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <button

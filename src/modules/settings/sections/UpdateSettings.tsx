@@ -4,7 +4,100 @@ import { useLanguageStore } from '@stores/useLanguageStore';
 import { Card } from '@components/ui/Card';
 import { Button } from '@components/ui/Button';
 import { Badge } from '@components/ui/Badge';
-import { RefreshCw, CheckCircle2, Download } from 'lucide-react';
+import { RefreshCw, CheckCircle2, Download, Sparkles, ShieldCheck } from 'lucide-react';
+
+const VERSION_CHANGELOG: Record<string, { en: string[]; ar: string[] }> = {
+  '1.0.11': {
+    en: [
+      'LBP Cart Price Editing: Edit cart item prices directly in Lebanese Pounds (e.g. 135,000 L.L) with automatic USD calculation ($1.50).',
+      'Clean Release Notes: Human-readable changelog display with private OTA channel.',
+      'Discount LBP Conversion: Real-time Lebanese Pound equivalent for order discounts.',
+    ],
+    ar: [
+      'تعديل سعر الصنف بالسلة بالليرة اللبنانية: إمكانية كتابة السعر مباشرة بالليرة (مثل 135,000 ل.ل) مع التحويل التلقائي للدولار ($1.50).',
+      'ملاحظات إصدار نظيفة ومبوبة: عرض المزايا والتحسينات بنقاط واضحة دون إظهار أي روابط خارجية.',
+      'معادل الخصم بالليرة: إظهار قيمة الخصم بالليرة اللبنانية فوراً إلى جانب الدولار.',
+    ],
+  },
+  '1.0.10': {
+    en: [
+      'Editable Business Branding: Change your store name in Settings to update Sidebar, Login, and Receipts in real time.',
+      'LBP Cart Price Editing: Change cart item prices directly in Lebanese Pounds (L.L) with automatic USD conversion.',
+      'Thermal Receipt Printer: Full Windows print spooler integration with instant 1-click Test Print tool.',
+      'Arabic Product Name: Dedicated Arabic naming field with full RTL support in inventory master records.',
+      'Terminology Updates: Localized customer labels to "زبون" and generalized shipping/transport expenses.',
+      'Safe Table Management: Soft-deletion prevents Foreign Key errors on tables with order history.',
+    ],
+    ar: [
+      'اسم وهوية المتجر: إمكانية تعديل اسم المنشأة بالكامل من الإعدادات ليظهر فوراً في القائمة والشاشات والإيصالات.',
+      'التركيز على الليرة بالسلة: إمكانية تعديل سعر الصنف في السلة مباشرة بالليرة اللبنانية مع التحويل التلقائي للدولار.',
+      'طابعة الإيصالات الحرارية: توافق فوري مع طابعات ويندوز مع زر طباعة إيصال تجريبي بضغطة واحدة.',
+      'اسم الصنف بالعربية: حقل مخصص لاسم المنتج باللغة العربية في شاشة المخزون وبطاقة الصنف.',
+      'تعميم المصطلحات: اعتماد مسمى "زبون" و"زبون صالة"، وتعديل المصاريف إلى "نقل وشحن".',
+      'حذف الطاولات الآمن: معالجة حذف الطاولات دون التأثير على الطلبات والفواتير السابقة.',
+    ],
+  },
+  '1.0.9': {
+    en: [
+      'LBP Currency Formatting: Formatted Lebanese Pound with thousand separators (e.g. 2,025,000 L.L).',
+      'Customer Debts: Added support for down payments in Lebanese Pounds (L.L).',
+      'Enhanced cashier receipt previews and dual currency payment breakdown.',
+    ],
+    ar: [
+      'تنسيق أرقام الليرة اللبنانية بفواصل الآلاف لسهولة القراءة (مثل: 2,025,000 ل.ل).',
+      'ديون الزبائن: إمكانية تسجيل دفعة أولى بالليرة اللبنانية عند تسجيل الدين.',
+      'تحسين معاينة إيصالات الكاشير وتفصيل الدفع بالعملتين.',
+    ],
+  },
+  '1.0.8': {
+    en: [
+      'Security: Restricted dollar exchange rate and PlayStation rate modifications to Manager PIN mode.',
+      'Enhanced cashier permissions and access safeguards.',
+    ],
+    ar: [
+      'أمان النظام: قصر تعديل سعر صرف الدولار وأسعار البلايستيشن على وضع المدير بكلمة مرور.',
+      'حماية صلاحيات الكاشير ومنع التعديلات غير المصرح بها.',
+    ],
+  },
+  '1.0.7': {
+    en: [
+      'Hookah lounge catalog cleanup and expanded POS shopping cart layout.',
+    ],
+    ar: [
+      'تنظيم وإصلاح قائمة الأراكيل وتوسيع مساحة سلة المشتريات لشاشات الكاشير.',
+    ],
+  },
+};
+
+const getCleanReleaseNotes = (
+  version: string,
+  rawNotes: string | undefined | null,
+  isAr: boolean,
+): string[] => {
+  const normalizedVer = version.replace(/^v/, '');
+  if (VERSION_CHANGELOG[normalizedVer]) {
+    return isAr ? VERSION_CHANGELOG[normalizedVer].ar : VERSION_CHANGELOG[normalizedVer].en;
+  }
+
+  if (rawNotes) {
+    const sanitized = rawNotes
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/https?:\/\/[^\s]+/gi, '')
+      .replace(/github[^\s]*/gi, '')
+      .replace(/compare\/[^\s]*/gi, '')
+      .replace(/Full Changelog:?/gi, '')
+      .trim();
+
+    const lines = sanitized
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 3 && !l.toLowerCase().includes('commit') && !l.toLowerCase().includes('github'));
+
+    if (lines.length > 0) return lines;
+  }
+
+  return isAr ? VERSION_CHANGELOG['1.0.10'].ar : VERSION_CHANGELOG['1.0.10'].en;
+};
 
 export const UpdateSettings: React.FC = () => {
   const { language } = useLanguageStore();
@@ -41,7 +134,8 @@ export const UpdateSettings: React.FC = () => {
   const isDownloaded = updateEvent?.status === 'downloaded';
   const isDownloading = updateEvent?.status === 'downloading';
   const hasUpdate = Boolean(updateStatus?.hasUpdate || updateEvent?.status === 'available' || isDownloaded);
-  const targetVersion = updateEvent?.version || updateStatus?.latestVersion || '1.0.6';
+  const activeVersion = updateStatus?.currentVersion || '1.0.10';
+  const targetVersion = updateEvent?.version || updateStatus?.latestVersion || activeVersion;
   const progressPercent = updateEvent?.progress?.percent ?? 0;
 
   useEffect(() => {
@@ -51,6 +145,11 @@ export const UpdateSettings: React.FC = () => {
   }, [updateStatus?.hasUpdate, isDownloaded, isDownloading, isLoading, downloadUpdate]);
 
   const isAr = language === 'ar';
+  const releaseNotesList = getCleanReleaseNotes(
+    hasUpdate ? targetVersion : activeVersion,
+    updateEvent?.releaseNotes || updateStatus?.releaseNotes,
+    isAr,
+  );
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -82,7 +181,7 @@ export const UpdateSettings: React.FC = () => {
                     {isAr ? 'جاري التحقق...' : 'Checking...'}
                   </span>
                 ) : (
-                  'v1.0.0'
+                  `v${activeVersion}`
                 )}
               </span>
             </div>
@@ -158,24 +257,44 @@ export const UpdateSettings: React.FC = () => {
             </div>
           )}
 
-          {/* Release Notes */}
-          {(updateEvent?.releaseNotes || updateStatus?.releaseNotes) && (
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {isAr ? `ملاحظات الإصدار (v${targetVersion}):` : `Release Notes (v${targetVersion}):`}
+          {/* Clean User-Friendly Release Notes */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                <span>
+                  {isAr
+                    ? `ملاحظات ومميزات الإصدار (v${hasUpdate ? targetVersion : activeVersion}):`
+                    : `Release Notes (v${hasUpdate ? targetVersion : activeVersion}):`}
+                </span>
               </span>
-              <div className="p-3 bg-slate-900 text-slate-200 text-xs rounded-xl font-mono whitespace-pre-wrap max-h-40 overflow-y-auto">
-                {updateEvent?.releaseNotes || updateStatus?.releaseNotes}
-              </div>
+              <span className="text-[10px] text-slate-400 font-medium">
+                {isAr ? 'أحدث المزايا والتحسينات' : 'Latest Features & Improvements'}
+              </span>
             </div>
-          )}
+
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 rounded-xl">
+              <ul className="space-y-2">
+                {releaseNotesList.map((note, index) => (
+                  <li
+                    key={index}
+                    className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed"
+                  >
+                    <span className="text-emerald-500 font-bold shrink-0 mt-0.5">•</span>
+                    <span>{note}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
 
           {/* Actions footer */}
           <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
-            <span>
-              {isAr ? 'القناة:' : 'Channel:'}{' '}
-              <strong className="text-slate-700 dark:text-slate-300">
-                {isAr ? 'تحديث تلقائي عبر السحابة' : 'Direct GitHub OTA'}
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+              <span>{isAr ? 'القناة:' : 'Channel:'}</span>
+              <strong className="text-slate-700 dark:text-slate-300 font-semibold">
+                {isAr ? 'تحديث سحابي فوري وآمن (Cloud OTA)' : 'Secure Cloud OTA'}
               </strong>
             </span>
             <div className="flex gap-2">
