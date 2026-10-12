@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useProductStore } from '@stores/useProductStore';
+import { useLanguageStore } from '@stores/useLanguageStore';
 import { Table, Column } from '@components/ui/Table';
 import { Button } from '@components/ui/Button';
 import { Dialog } from '@components/ui/Dialog';
@@ -10,6 +11,7 @@ import { Truck, Plus, Trash2 } from 'lucide-react';
 
 export const SuppliersPage: React.FC = () => {
   const { suppliers, loadMetadata } = useProductStore();
+  const { language } = useLanguageStore();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -58,17 +60,19 @@ export const SuppliersPage: React.FC = () => {
   const columns: Column<SupplierEntity>[] = [
     {
       key: 'name',
-      header: 'Supplier Name',
+      header: language === 'ar' ? 'اسم المورد' : 'Supplier Name',
       render: (s) => (
         <div>
           <span className="font-bold text-slate-800 dark:text-slate-200 block">{s.name}</span>
-          <span className="text-[10px] text-slate-500">Code: {s.code}</span>
+          <span className="text-[10px] text-slate-500">
+            {language === 'ar' ? 'الكود:' : 'Code:'} {s.code}
+          </span>
         </div>
       ),
     },
     {
       key: 'contact_person',
-      header: 'Contact Person',
+      header: language === 'ar' ? 'الشخص المسؤول' : 'Contact Person',
       render: (s) => (
         <span className="text-slate-600 dark:text-slate-400 text-xs">
           {s.contact_person || '—'}
@@ -77,12 +81,12 @@ export const SuppliersPage: React.FC = () => {
     },
     {
       key: 'phone',
-      header: 'Phone',
+      header: language === 'ar' ? 'الهاتف' : 'Phone',
       render: (s) => <span className="text-slate-500 font-mono text-xs">{s.phone || '—'}</span>,
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: language === 'ar' ? 'إجراءات' : 'Actions',
       render: (s) => (
         <div className="flex justify-end">
           <Button
@@ -91,7 +95,7 @@ export const SuppliersPage: React.FC = () => {
             size="sm"
             onClick={() => setSupplierToDelete(s)}
             className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 p-1.5 h-8 w-8"
-            title="Delete Supplier"
+            title={language === 'ar' ? 'حذف المورد' : 'Delete Supplier'}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -103,21 +107,23 @@ export const SuppliersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 rtl:space-x-reverse">
           <Truck className="h-6 w-6 text-sky-600" />
           <div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              Supplier Profiles
+              {language === 'ar' ? 'دليل الموردين' : 'Supplier Profiles'}
             </h1>
             <p className="text-xs text-slate-500">
-              Manage vendor contact details and supplier associations.
+              {language === 'ar'
+                ? 'إدارة بيانات الاتصال بالموردين والشركات الموردة للمتجر.'
+                : 'Manage vendor contact details and supplier associations.'}
             </p>
           </div>
         </div>
 
-        <Button onClick={() => setIsOpen(true)} size="md" className="flex items-center space-x-2">
+        <Button onClick={() => setIsOpen(true)} size="md" className="flex items-center space-x-2 rtl:space-x-reverse">
           <Plus className="h-4 w-4" />
-          <span>New Supplier</span>
+          <span>{language === 'ar' ? 'مورد جديد' : 'New Supplier'}</span>
         </Button>
       </div>
 
@@ -125,34 +131,42 @@ export const SuppliersPage: React.FC = () => {
         <Table columns={columns} data={suppliers} keyExtractor={(s) => s.id} />
       </Card>
 
-      <Dialog isOpen={isOpen} title="Create Supplier Profile" onClose={() => setIsOpen(false)}>
+      <Dialog
+        isOpen={isOpen}
+        title={language === 'ar' ? 'إنشاء ملف مورد جديد' : 'Create Supplier Profile'}
+        onClose={() => setIsOpen(false)}
+      >
         <form onSubmit={handleCreate} className="space-y-4">
           <Input
-            label="Supplier / Fisherman Name *"
-            placeholder="e.g. Harbor Fisherman Abu Ahmad, Coastal Fresh Fish Co..."
+            label={language === 'ar' ? 'اسم المورد / الشركة *' : 'Supplier / Vendor Name *'}
+            placeholder={
+              language === 'ar'
+                ? 'مثال: شركة التوزيع العامة، مؤسسة السلام...'
+                : 'e.g. General Distribution Co, Prime Supplies...'
+            }
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             autoFocus
           />
           <Input
-            label="Phone Number"
-            placeholder="e.g. +961 70 123456"
+            label={language === 'ar' ? 'رقم الهاتف' : 'Phone Number'}
+            placeholder="03 / 70 / 71 / 76..."
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
           <Input
-            label="Contact Person (Optional)"
-            placeholder="e.g. Abu Ahmad"
+            label={language === 'ar' ? 'الشخص المسؤول (اختياري)' : 'Contact Person (Optional)'}
+            placeholder={language === 'ar' ? 'مثال: سامر، رامي...' : 'e.g. John Smith'}
             value={contact}
             onChange={(e) => setContact(e.target.value)}
           />
-          <div className="pt-2 flex justify-end space-x-2">
+          <div className="pt-2 flex justify-end space-x-2 rtl:space-x-reverse">
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-              Cancel
+              {language === 'ar' ? 'إلغاء' : 'Cancel'}
             </Button>
             <Button type="submit" className="bg-sky-600 hover:bg-sky-500 font-bold">
-              Save Supplier ✓
+              {language === 'ar' ? 'حفظ المورد ✓' : 'Save Supplier ✓'}
             </Button>
           </div>
         </form>
@@ -161,22 +175,31 @@ export const SuppliersPage: React.FC = () => {
       {/* Delete Confirmation Modal */}
       <Dialog
         isOpen={Boolean(supplierToDelete)}
-        title="Delete Supplier Confirmation"
+        title={language === 'ar' ? 'تأكيد حذف المورد' : 'Delete Supplier Confirmation'}
         onClose={() => setSupplierToDelete(null)}
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Are you sure you want to delete supplier{' '}
-            <strong className="text-slate-900 dark:text-white font-bold">"{supplierToDelete?.name}"</strong>?
+            {language === 'ar' ? (
+              <>
+                هل أنت متأكد من حذف المورد{' '}
+                <strong className="text-slate-900 dark:text-white font-bold">"{supplierToDelete?.name}"</strong>؟
+              </>
+            ) : (
+              <>
+                Are you sure you want to delete supplier{' '}
+                <strong className="text-slate-900 dark:text-white font-bold">"{supplierToDelete?.name}"</strong>?
+              </>
+            )}
           </p>
-          <div className="pt-2 flex justify-end space-x-2">
+          <div className="pt-2 flex justify-end space-x-2 rtl:space-x-reverse">
             <Button
               type="button"
               variant="outline"
               onClick={() => setSupplierToDelete(null)}
               disabled={isDeleting}
             >
-              Cancel
+              {language === 'ar' ? 'إلغاء' : 'Cancel'}
             </Button>
             <Button
               type="button"
@@ -184,7 +207,9 @@ export const SuppliersPage: React.FC = () => {
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
             >
-              {isDeleting ? 'Deleting...' : 'Delete Supplier'}
+              {isDeleting
+                ? language === 'ar' ? 'جاري الحذف...' : 'Deleting...'
+                : language === 'ar' ? 'حذف المورد' : 'Delete Supplier'}
             </Button>
           </div>
         </div>

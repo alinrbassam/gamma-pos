@@ -154,7 +154,7 @@ export class TablesService {
     }
 
     const existing = this.db
-      .prepare('SELECT id FROM dine_in_tables WHERE LOWER(TRIM(name)) = LOWER(?)')
+      .prepare('SELECT id FROM dine_in_tables WHERE LOWER(TRIM(name)) = LOWER(?) AND is_active = 1')
       .get(trimmed);
     if (existing) {
       throw new Error(`A table named "${trimmed}" already exists. Please choose a different name.`);
@@ -188,7 +188,7 @@ export class TablesService {
     }
 
     const existing = this.db
-      .prepare('SELECT id FROM dine_in_tables WHERE LOWER(TRIM(name)) = LOWER(?) AND id != ?')
+      .prepare('SELECT id FROM dine_in_tables WHERE LOWER(TRIM(name)) = LOWER(?) AND id != ? AND is_active = 1')
       .get(trimmed, id);
     if (existing) {
       throw new Error(`A table named "${trimmed}" already exists. Please choose a different name.`);
@@ -227,8 +227,28 @@ export class TablesService {
       throw new Error('Cannot remove a table with an active running tab. Please settle or move the tab first.');
     }
 
-    this.db.prepare('DELETE FROM dine_in_tables WHERE id = ?').run(id);
-    logger.info('TablesService', `Deleted table: ${id}`);
+    // Check if table has any historical tabs or records
+    const hasHistory = this.db
+      .prepare('SELECT id FROM dine_in_tabs WHERE table_id = ? LIMIT 1')
+      .get(id);
+
+    if (hasHistory) {
+      // Soft-delete to preserve foreign key integrity with past tabs & sales history
+      const suffix = ` [deleted ${Date.now()}]`;
+      this.db
+        .prepare(`
+          UPDATE dine_in_tables
+          SET is_active = 0,
+              name = name || ?
+          WHERE id = ?
+        `)
+        .run(suffix, id);
+      logger.info('TablesService', `Soft-deleted table with history: ${id}`);
+    } else {
+      this.db.prepare('DELETE FROM dine_in_tables WHERE id = ?').run(id);
+      logger.info('TablesService', `Deleted table: ${id}`);
+    }
+
     return true;
   }
 
@@ -316,7 +336,7 @@ export class TablesService {
     notes?: string;
   }): DineInTabEntity {
     const table = this.db
-      .prepare('SELECT * FROM dine_in_tables WHERE id = ?')
+      .prepare('SELECT * FROM dine_in_tables WHERE id = ? AND is_active = 1')
       .get(params.tableId) as DineInTableEntity | undefined;
 
     if (!table) {

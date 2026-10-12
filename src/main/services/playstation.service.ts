@@ -349,7 +349,7 @@ export class PlaystationService {
    */
   public sendSessionToTable(sessionId: string, tableId: string): any {
     const sessionData = this.stopSession(sessionId);
-    const table = this.db.prepare('SELECT * FROM dine_in_tables WHERE id = ?').get(tableId) as any;
+    const table = this.db.prepare('SELECT * FROM dine_in_tables WHERE id = ? AND is_active = 1').get(tableId) as any;
     if (!table) {
       throw new Error(`Table ${tableId} not found`);
     }

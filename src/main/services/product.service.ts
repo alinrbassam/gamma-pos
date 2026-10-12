@@ -61,12 +61,15 @@ export class ProductService {
 
     logger.info('ProductService', `Creating new product: ${input.nameEn} (${input.sku})`);
 
+    const nameEn = (input.nameEn || input.nameAr || '').trim();
+    const nameAr = (input.nameAr || input.nameEn || '').trim();
+
     const product = this.productRepo.createProduct({
       sku: input.sku,
       product_code: input.productCode,
       primary_barcode: input.primaryBarcode,
-      name_en: input.nameEn,
-      name_ar: input.nameAr,
+      name_en: nameEn,
+      name_ar: nameAr,
       short_name: input.shortName,
       description: input.description,
       internal_notes: input.internalNotes,
@@ -168,13 +171,16 @@ export class ProductService {
       }
     }
 
+    const nameEn = input.nameEn !== undefined ? (input.nameEn || input.nameAr || '').trim() : undefined;
+    const nameAr = input.nameAr !== undefined ? (input.nameAr || input.nameEn || '').trim() : undefined;
+
     const updated = this.productRepo.updateProduct({
       id: input.id,
       sku: input.sku,
       product_code: input.productCode,
       primary_barcode: input.primaryBarcode,
-      name_en: input.nameEn,
-      name_ar: input.nameAr,
+      name_en: nameEn,
+      name_ar: nameAr,
       short_name: input.shortName,
       description: input.description,
       internal_notes: input.internalNotes,

@@ -52,9 +52,21 @@ describe('Dine-In Tables & Running Tabs System', () => {
           };
         }
 
+        if (sql.includes('SELECT * FROM dine_in_tables WHERE id = ? AND is_active = 1')) {
+          return {
+            get: (id: string) => tablesStore.find((t) => t.id === id && t.is_active === 1),
+          };
+        }
+
         if (sql.includes('SELECT * FROM dine_in_tables WHERE id = ?')) {
           return {
             get: (id: string) => tablesStore.find((t) => t.id === id),
+          };
+        }
+
+        if (sql.includes('SELECT id FROM dine_in_tables WHERE LOWER(TRIM(name)) = LOWER(?) AND is_active = 1')) {
+          return {
+            get: (name: string) => tablesStore.find((t) => t.is_active === 1 && t.name.toLowerCase().trim() === name.toLowerCase().trim()),
           };
         }
 
@@ -90,6 +102,16 @@ describe('Dine-In Tables & Running Tabs System', () => {
         if (sql.includes('UPDATE dine_in_tables')) {
           return {
             run: (...args: any[]) => {
+              if (sql.includes('is_active = 0')) {
+                const suffix = args[0];
+                const id = args[1];
+                const t = tablesStore.find((tbl) => tbl.id === id);
+                if (t) {
+                  t.is_active = 0;
+                  t.name = t.name + suffix;
+                }
+                return { changes: 1 };
+              }
               const name = args[0];
               const cap = args[1];
               const id = args[2];
@@ -113,6 +135,12 @@ describe('Dine-In Tables & Running Tabs System', () => {
         }
 
         // Tabs Queries
+        if (sql.includes('SELECT id FROM dine_in_tabs WHERE table_id = ? LIMIT 1')) {
+          return {
+            get: (tableId: string) => tabsStore.find((t) => t.table_id === tableId),
+          };
+        }
+
         if (sql.includes("SELECT * FROM dine_in_tabs WHERE status = 'Active'")) {
           return {
             all: () => tabsStore.filter((t) => t.status === 'Active'),
@@ -606,4 +634,46 @@ describe('Dine-In Tables & Running Tabs System', () => {
     expect(checkoutResult.items[0].product_id).toBe('ps5-gaming-service');
     expect(checkoutResult.items[0].name_en).toBe('🎮 PS5 - Console 1 (2P, 1m)');
   });
+
+  it('9. soft deletes table with past order history without foreign key failure, and allows reusing name', () => {
+    // Open and checkout a tab on Table 1 so Table 1 has historical records in dine_in_tabs
+    const tab = tablesService.openTab({
+      tableId: 'tbl-1',
+      customerName: 'Past Guest',
+    });
+    tablesService.addItemToTab({
+      tabId: tab.id,
+      productId: 'prod-coffee',
+      productName: 'Turkish Coffee',
+      quantity: 1,
+      unitPriceUsd: 2.5,
+    });
+    tablesService.checkoutTab({
+      tabId: tab.id,
+      payments: [{ paymentMethod: 'Cash USD', amount: 2.5 }],
+      exchangeRate: 89500,
+      paidUsd: 5.0,
+      paidLbp: 0,
+      changeUsd: 2.5,
+      changeLbp: 223750,
+    });
+
+    // Attempt to delete Table 1 (which has historical tabs)
+    const deleted = tablesService.deleteTable('tbl-1');
+    expect(deleted).toBe(true);
+
+    // Table 1 must be gone from active tables
+    const state = tablesService.getTablesAndTabs();
+    expect(state.tablesWithTabs.find((t) => t.table.id === 'tbl-1')).toBeUndefined();
+    expect(state.tablesWithTabs).toHaveLength(14);
+
+    // Manager can re-create a table named "Table 1" without collision!
+    const reCreated = tablesService.createTable('Table 1', 4);
+    expect(reCreated.name).toBe('Table 1');
+    expect(reCreated.id).not.toBe('tbl-1');
+
+    const newState = tablesService.getTablesAndTabs();
+    expect(newState.tablesWithTabs).toHaveLength(15);
+  });
 });
+

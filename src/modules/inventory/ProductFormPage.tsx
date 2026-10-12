@@ -103,8 +103,11 @@ export const ProductFormPage: React.FC = () => {
 
   const onSubmit = async (data: ProductInput) => {
     setSuccessMsg(null);
-    // Ensure nameAr mirrors nameEn if not explicitly set
-    if (!data.nameAr) data.nameAr = data.nameEn;
+    // Ensure both names are populated if one is provided
+    const trimmedAr = (data.nameAr || '').trim();
+    const trimmedEn = (data.nameEn || '').trim();
+    data.nameEn = trimmedEn || trimmedAr;
+    data.nameAr = trimmedAr || trimmedEn;
 
     // Ensure a valid baseUnitId is always assigned
     if (!data.baseUnitId && units.length > 0) {
@@ -147,19 +150,34 @@ export const ProductFormPage: React.FC = () => {
       {successMsg && <Alert variant="success">{successMsg}</Alert>}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        {/* Section 1: Product Name */}
-        <Card title={language === 'ar' ? '1. تفاصيل المنتج' : '1. Product Details'}>
-          <Input
-            label={language === 'ar' ? 'اسم المنتج *' : 'Product Name *'}
-            placeholder={
-              language === 'ar'
-                ? 'مثال: قهوة تركية، آيس كوفي، أركيلة تفاحتين، كلوب ساندويش...'
-                : 'e.g. Turkish Coffee, Ice Coffee, Shisha Double Apple, Club Sandwich...'
-            }
-            {...register('nameEn')}
-            error={errors.nameEn?.message}
-            autoFocus
-          />
+        {/* Section 1: Product Name (Bilingual Arabic & English) */}
+        <Card title={language === 'ar' ? '1. تفاصيل اسم المنتج' : '1. Product Details'}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label={language === 'ar' ? 'اسم المنتج (بالعربية) *' : 'Product Name (Arabic)'}
+              placeholder={
+                language === 'ar'
+                  ? 'مثال: قهوة تركية، عصير، أركيلة تفاحتين، كلوب ساندويش...'
+                  : 'e.g. قهوة تركية، عصير، أركيلة...'
+              }
+              {...register('nameAr')}
+              error={errors.nameAr?.message}
+              dir="rtl"
+              autoFocus={language === 'ar'}
+            />
+            <Input
+              label={language === 'ar' ? 'اسم المنتج (بالإنجليزية)' : 'Product Name (English) *'}
+              placeholder="e.g. Turkish Coffee, Ice Coffee, Shisha Double Apple, Club Sandwich..."
+              {...register('nameEn')}
+              error={errors.nameEn?.message}
+              autoFocus={language !== 'ar'}
+            />
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2">
+            {language === 'ar'
+              ? '💡 يمكنك كتابة الاسم بالعربية وبالإنجليزية ليظهر بشكل واضح في شاشة الكاشير والفواتير والمنيو باللغتين.'
+              : '💡 You can enter both English and Arabic names for seamless bilingual display across receipts, POS terminal, and menus.'}
+          </p>
         </Card>
 
         {/* Section 2: Category (Menu Section) */}

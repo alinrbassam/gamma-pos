@@ -164,7 +164,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
     if (!borrowerName.trim()) {
       setValidationError(
         language === 'ar'
-          ? 'يرجى إدخال اسم المستدين / العميل للمتابعة'
+          ? 'يرجى إدخال اسم المستدين / الزبون للمتابعة'
           : 'Please enter borrower name to continue',
       );
       return;
@@ -457,7 +457,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
                       <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
                         {changeUsd > 0.001
                           ? language === 'ar'
-                            ? 'الفاتورة مغطاة بالكامل - الباقي للعميل:'
+                            ? 'الفاتورة مغطاة بالكامل - الباقي للزبون:'
                             : 'Order Covered - Change Due:'
                           : language === 'ar'
                           ? 'المبلغ مدفوع بالكامل بالتمام'
@@ -542,7 +542,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
                   <User className="h-3.5 w-3.5 text-amber-600" />
-                  <span>{language === 'ar' ? 'اسم العميل / المستدين *:' : 'Customer / Borrower Name *:'}</span>
+                  <span>{language === 'ar' ? 'اسم الزبون / المستدين *:' : 'Customer / Borrower Name *:'}</span>
                 </label>
                 <input
                   type="text"

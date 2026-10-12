@@ -57,7 +57,7 @@ const CATEGORY_META: Record<
     color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
   },
   Transport: {
-    labelAr: 'نقل وشحن أسماك',
+    labelAr: 'نقل وشحن',
     labelEn: 'Transport & Shipping',
     icon: Truck,
     color: 'bg-violet-500/10 text-violet-400 border-violet-500/30',
@@ -259,7 +259,7 @@ export const ExpensesPage: React.FC = () => {
             {formatCurrency(kpiMetrics.iceTotal)}
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
-            {language === 'ar' ? 'حفظ الأسماك الطازجة' : 'Fresh fish preservation'}
+            {language === 'ar' ? 'تبريد وحفظ البضاعة' : 'Refrigeration & cooling'}
           </p>
         </div>
 
@@ -291,7 +291,7 @@ export const ExpensesPage: React.FC = () => {
             {formatCurrency(kpiMetrics.waterTotal)}
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
-            {language === 'ar' ? 'تنظيف الأسماك والمحل' : 'Fish cleaning & sanitization'}
+            {language === 'ar' ? 'استخدام المحل والنظافة' : 'Store utilities & cleaning'}
           </p>
         </div>
       </div>
@@ -543,8 +543,8 @@ export const ExpensesPage: React.FC = () => {
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder={
                     language === 'ar'
-                      ? 'مثال: فاتورة كهرباء شهر سبتمبر، أو شراء 5 قوالب ثلج'
-                      : 'e.g. September electricity bill or 5 ice blocks purchase'
+                      ? 'مثال: فاتورة كهرباء، نقل وشحن بضاعة، صيانة، إيجار...'
+                      : 'e.g. Electricity bill, freight & transport, maintenance, rent...'
                   }
                   className="w-full px-3 py-2 bg-[#0B1120] border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-rose-500"
                 />

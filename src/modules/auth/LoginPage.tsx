@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@stores/useAuthStore';
 import { useThemeStore } from '@stores/useThemeStore';
 import { useLanguageStore } from '@stores/useLanguageStore';
+import { useConfigStore } from '@stores/useConfigStore';
 import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { Alert } from '@components/ui/Alert';
@@ -15,6 +16,13 @@ export const LoginPage: React.FC = () => {
   const { setAuth, rememberedUsername, setRememberedUsername } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
   const { language, setLanguage } = useLanguageStore();
+  const { config, loadConfig } = useConfigStore();
+
+  useEffect(() => {
+    if (!config) {
+      loadConfig();
+    }
+  }, [config, loadConfig]);
 
   const [activeTab, setActiveTab] = useState<'password' | 'pin'>('password');
   const [username, setUsername] = useState(rememberedUsername || '');
@@ -129,10 +137,10 @@ export const LoginPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-black text-white tracking-wide">
-                {language === 'ar' ? 'ابن خالتي' : 'Eben Khalti'}
+                {config?.businessName || (language === 'ar' ? 'غاما كافيه ولاونج' : 'Gamma Café & Lounge')}
               </h2>
               <span className="text-[10px] text-amber-400 font-medium block">
-                {language === 'ar' ? 'كافيه وشيشة ولاونج' : 'Café & Shisha Lounge'}
+                {config?.businessType || (language === 'ar' ? 'كافيه وشيشة ولاونج' : 'Café & Shisha Lounge')}
               </span>
             </div>
           </div>

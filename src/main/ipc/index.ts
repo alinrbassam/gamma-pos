@@ -4,6 +4,7 @@ import { ConfigService } from '../services/config.service';
 import { AuthService } from '../services/auth.service';
 import { UserService } from '../services/user.service';
 import { SettingsService } from '../services/settings.service';
+import { BusinessRepository } from '../database/repositories/business.repository';
 import { AuditRepository } from '../database/repositories/audit.repository';
 import { registerInventoryIpcHandlers } from './inventory.ipc';
 import { registerPurchasingIpcHandlers } from './purchasing.ipc';
@@ -36,12 +37,30 @@ export function registerIpcHandlers(): void {
   const userService = new UserService(db);
   const settingsService = new SettingsService(db);
   const auditRepo = new AuditRepository(db);
+  const businessRepo = new BusinessRepository(db);
 
   // Core Config
-  ipcMain.handle(IPC_CHANNELS.CONFIG_GET, async () => ({
-    success: true,
-    data: configService.getConfig(),
-  }));
+  ipcMain.handle(IPC_CHANNELS.CONFIG_GET, async () => {
+    const cfg = configService.getConfig();
+    try {
+      const activeBiz = businessRepo.getActiveBusiness();
+      if (activeBiz?.name) {
+        cfg.businessName = activeBiz.name;
+      }
+      if (activeBiz?.address) {
+        cfg.address = activeBiz.address;
+      }
+      if (activeBiz?.phone) {
+        cfg.phone = activeBiz.phone;
+      }
+    } catch {
+      // fallback
+    }
+    return {
+      success: true,
+      data: cfg,
+    };
+  });
 
   ipcMain.handle(IPC_CHANNELS.LOG_WRITE, async (_, payload: any) => {
     logger.log(payload.level, payload.module, payload.message, payload.details);
@@ -205,6 +224,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.SETTINGS_UPDATE_SECTION, async (_, category: string, values: Record<string, string>, userId?: string): Promise<ApiResponse> => {
     try {
       const res = settingsService.updateSectionSettings(category, values, userId);
+      if ((category === 'general' || category === 'business') && values.name) {
+        try {
+          configService.updateConfig({ businessName: values.name });
+        } catch {
+          // ignore
+        }
+      }
       return { success: true, data: res };
     } catch (err) {
       return { success: false, error: { code: 'SETTINGS_UPDATE_ERROR', message: (err as Error).message } };

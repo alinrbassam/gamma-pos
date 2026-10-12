@@ -1,6 +1,7 @@
 import React from 'react';
 import { SalesOrderEntity, SalesOrderItemEntity } from '@shared/types';
 import { useLanguageStore } from '../../renderer/stores/useLanguageStore';
+import { useConfigStore } from '../../renderer/stores/useConfigStore';
 import { Button } from '@components/ui/Button';
 import { Printer } from 'lucide-react';
 import { formatDateTime } from '@utils/date';
@@ -36,11 +37,12 @@ export const ThermalReceiptModal: React.FC<Props> = ({
   taxNumber = 'VAT-300998811',
 }) => {
   const { language } = useLanguageStore();
+  const { config } = useConfigStore();
 
   if (!isOpen || !sale) return null;
 
-  const defaultStoreName = language === 'ar' ? 'ابن خالتي (كافيه وشيشة)' : 'Eben Khalti (Café & Shisha)';
-  const defaultAddress = language === 'ar' ? 'الفرع الرئيسي' : 'Main Branch';
+  const defaultStoreName = config?.businessName || (language === 'ar' ? 'غاما كافيه ولاونج' : 'Gamma Café & Lounge');
+  const defaultAddress = config?.address || (language === 'ar' ? 'الفرع الرئيسي' : 'Main Branch');
 
   const storeTitle = businessName || defaultStoreName;
   const storeAddr = businessAddress || defaultAddress;
@@ -92,6 +94,9 @@ export const ThermalReceiptModal: React.FC<Props> = ({
           {/* Header */}
           <div className="text-center space-y-0.5">
             <h3 className="font-black text-sm tracking-tight">{storeTitle}</h3>
+            {config?.receiptHeader && (
+              <p className="text-[10px] font-medium text-slate-800">{config.receiptHeader}</p>
+            )}
             <p className="text-[10px] text-slate-600">{storeAddr}</p>
             <p className="text-[10px] text-slate-600">VAT #: {taxNumber}</p>
             <div className="border-b border-dashed border-slate-800 my-1" />
@@ -123,7 +128,7 @@ export const ThermalReceiptModal: React.FC<Props> = ({
             </div>
             {sale.customer_name && (
               <div className="flex justify-between font-bold text-amber-950 bg-amber-100/70 p-1 rounded">
-                <span>{language === 'ar' ? 'العميل / المستدين:' : 'Customer:'}</span>
+                <span>{language === 'ar' ? 'الزبون / المستدين:' : 'Customer:'}</span>
                 <span>{sale.customer_name}</span>
               </div>
             )}
@@ -252,9 +257,9 @@ export const ThermalReceiptModal: React.FC<Props> = ({
           {/* Clean Footer */}
           <div className="text-center text-[9px] pt-1 text-slate-700 leading-tight space-y-0.5">
             <p className="font-bold">
-              {language === 'ar' ? 'أهلاً وسهلاً بكم دائماً! ✨' : 'Welcome anytime! Thank you! ✨'}
+              {config?.receiptFooter || (language === 'ar' ? 'أهلاً وسهلاً بكم دائماً! ✨' : 'Welcome anytime! Thank you! ✨')}
             </p>
-            <p>{language === 'ar' ? 'كافيتيريا وصالة غاما' : 'Gamma Cafeteria & Lounge'}</p>
+            <p>{storeTitle}</p>
           </div>
         </div>
 

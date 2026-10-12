@@ -190,7 +190,7 @@ export const RawProductSchema = z.object({
   sku: z.string().optional().default(() => 'SKU-' + Math.floor(100000 + Math.random() * 900000)),
   productCode: z.string().optional(),
   primaryBarcode: z.string().optional(),
-  nameEn: z.string().min(1, 'Product name is required'),
+  nameEn: z.string().optional().default(''),
   nameAr: z.string().optional().default(''),
   shortName: z.string().optional(),
   description: z.string().optional(),
@@ -246,6 +246,12 @@ export const RawProductSchema = z.object({
 });
 
 export const ProductSchema = RawProductSchema.refine(
+  (data) => Boolean((data.nameEn && data.nameEn.trim()) || (data.nameAr && data.nameAr.trim())),
+  {
+    message: 'Product name is required (in English or Arabic)',
+    path: ['nameEn'],
+  },
+).refine(
   (data) => data.sellingPrice >= data.minSellingPrice,
   {
     message: 'Selling price cannot be less than minimum allowed selling price',

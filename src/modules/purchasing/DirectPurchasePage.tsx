@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePurchasingStore } from '@stores/usePurchasingStore';
 import { useProductStore } from '@stores/useProductStore';
 import { useAuthStore } from '@stores/useAuthStore';
+import { useLanguageStore } from '@stores/useLanguageStore';
 import { ProductEntity } from '@shared/types';
 import { Card } from '@components/ui/Card';
 import { Input } from '@components/ui/Input';
@@ -26,6 +27,7 @@ export const DirectPurchasePage: React.FC = () => {
   const { suppliers, products, categories, units, loadMetadata, loadProducts, createProduct } =
     useProductStore();
   const { user } = useAuthStore();
+  const { language } = useLanguageStore();
 
   const [supplierId, setSupplierId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
@@ -215,14 +217,16 @@ export const DirectPurchasePage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-3 rtl:space-x-reverse">
         <Store className="h-6 w-6 text-emerald-600" />
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            Direct Store Purchase
+            {language === 'ar' ? 'شراء مباشر للمتجر' : 'Direct Store Purchase'}
           </h1>
           <p className="text-xs text-slate-500">
-            Record immediate over-the-counter purchases without prior purchase order.
+            {language === 'ar'
+              ? 'تسجيل فواتير ومشتريات فورية وتحديث المخزون مباشرة دون أمر شراء مسبق.'
+              : 'Record immediate over-the-counter purchases without prior purchase order.'}
           </p>
         </div>
       </div>
@@ -231,16 +235,16 @@ export const DirectPurchasePage: React.FC = () => {
       {successMsg && <Alert variant="success">{successMsg}</Alert>}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card title="1. Direct Purchase Information">
+        <Card title={language === 'ar' ? '1. معلومات الشراء المباشر' : '1. Direct Purchase Information'}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex flex-col space-y-1">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Supplier *
+                {language === 'ar' ? 'المورد *' : 'Supplier *'}
               </label>
               <select
                 value={supplierId}
                 onChange={(e) => setSupplierId(e.target.value)}
-                className="px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg"
+                className="px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
               >
                 {suppliers.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -251,12 +255,13 @@ export const DirectPurchasePage: React.FC = () => {
             </div>
 
             <Input
-              label="Vendor Invoice #"
+              label={language === 'ar' ? 'رقم فاتورة المورد #' : 'Vendor Invoice #'}
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
+              placeholder={language === 'ar' ? 'مثال: INV-9821' : 'e.g. INV-9821'}
             />
             <DatePicker
-              label="Purchase Date *"
+              label={language === 'ar' ? 'تاريخ الشراء *' : 'Purchase Date *'}
               value={receiptDate}
               onChange={setReceiptDate}
               required
@@ -264,14 +269,14 @@ export const DirectPurchasePage: React.FC = () => {
           </div>
         </Card>
 
-        <Card title="2. Products Purchased">
+        <Card title={language === 'ar' ? '2. الأصناف المشتراة' : '2. Products Purchased'}>
           <div className="space-y-4">
             {/* Direct Dropdown + Quick Search + Add New Product */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
               {/* Dropdown Selector */}
               <div className="md:col-span-5 flex flex-col space-y-1">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Select Item from Product Catalog (Dropdown)
+                  {language === 'ar' ? 'اختر الصنف من دليل المنتجات (قائمة منسدلة)' : 'Select Item from Product Catalog (Dropdown)'}
                 </label>
                 <select
                   value=""
@@ -285,28 +290,32 @@ export const DirectPurchasePage: React.FC = () => {
                   }}
                   className="px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium cursor-pointer"
                 >
-                  <option value="">-- Choose Existing Product from Catalog --</option>
+                  <option value="">
+                    {language === 'ar' ? '-- اختر منتجاً موجوداً من الدليل --' : '-- Choose Existing Product from Catalog --'}
+                  </option>
                   <option value="__add_new__" className="font-bold text-emerald-600 dark:text-emerald-400">
-                    ➕ + Add New / Unlisted Item...
+                    {language === 'ar' ? '➕ + إضافة صنف جديد غير مدرج...' : '➕ + Add New / Unlisted Item...'}
                   </option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name_en} {p.name_ar ? `(${p.name_ar})` : ''} - SKU: {p.sku} [Stock: {p.quantity_on_hand ?? 0} {p.unit_symbol || ''}]
+                      {language === 'ar' ? (p.name_ar || p.name_en) : p.name_en} {p.name_ar && language !== 'ar' ? `(${p.name_ar})` : ''} - SKU: {p.sku} [{language === 'ar' ? 'المخزون' : 'Stock'}: {p.quantity_on_hand ?? 0} {p.unit_symbol || ''}]
                     </option>
                   ))}
                 </select>
                 <span className="text-[11px] text-slate-400">
-                  Select existing product or choose &quot;+ Add New / Unlisted Item&quot;
+                  {language === 'ar'
+                    ? 'اختر منتجاً موجوداً أو اختر "+ إضافة صنف جديد غير مدرج"'
+                    : 'Select existing product or choose "+ Add New / Unlisted Item"'}
                 </span>
               </div>
 
               {/* Quick Search */}
               <div className="md:col-span-4 relative flex flex-col space-y-1">
                 <Input
-                  label="Or Search Product (Name, SKU, Barcode)"
+                  label={language === 'ar' ? 'أو ابحث عن المنتج (الاسم، SKU، الباركود)' : 'Or Search Product (Name, SKU, Barcode)'}
                   value={productQuery}
                   onChange={(e) => setProductQuery(e.target.value)}
-                  placeholder="Type to filter product catalog..."
+                  placeholder={language === 'ar' ? 'اكتب لتصفية دليل المنتجات...' : 'Type to filter product catalog...'}
                 />
                 {productQuery && (
                   <div className="absolute z-20 top-full left-0 right-0 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl max-h-56 overflow-y-auto">
@@ -314,12 +323,16 @@ export const DirectPurchasePage: React.FC = () => {
                       onClick={() => openQuickAdd(productQuery)}
                       className="p-2.5 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 cursor-pointer border-b border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300 font-medium"
                     >
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <PlusCircle className="h-4 w-4 text-emerald-600" />
-                        <span>Add &quot;{productQuery}&quot; as New Product</span>
+                        <span>
+                          {language === 'ar'
+                            ? `إضافة "${productQuery}" كمنتج جديد`
+                            : `Add "${productQuery}" as New Product`}
+                        </span>
                       </div>
                       <span className="text-[10px] uppercase font-bold tracking-wider bg-emerald-200 dark:bg-emerald-800 px-1.5 py-0.5 rounded">
-                        New Item
+                        {language === 'ar' ? 'صنف جديد' : 'New Item'}
                       </span>
                     </div>
                     {products
@@ -336,11 +349,11 @@ export const DirectPurchasePage: React.FC = () => {
                           className="p-3 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer border-b border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs"
                         >
                           <div>
-                            <span className="font-bold">{p.name_en}</span>
-                            {p.name_ar && <span className="text-slate-400 ml-1">({p.name_ar})</span>}
-                            <span className="text-slate-400 text-[10px] ml-2 font-mono">[{p.sku}]</span>
-                            <span className="ml-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-                              [Stock: {p.quantity_on_hand ?? 0} {p.unit_symbol || ''}]
+                            <span className="font-bold">{language === 'ar' ? (p.name_ar || p.name_en) : p.name_en}</span>
+                            {p.name_ar && language !== 'ar' && <span className="text-slate-400 ml-1">({p.name_ar})</span>}
+                            <span className="text-slate-400 text-[10px] ml-2 rtl:ml-0 rtl:mr-2 font-mono">[{p.sku}]</span>
+                            <span className="ml-2 rtl:ml-0 rtl:mr-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+                              [{language === 'ar' ? 'المخزون' : 'Stock'}: {p.quantity_on_hand ?? 0} {p.unit_symbol || ''}]
                             </span>
                           </div>
                           <Plus className="h-4 w-4 text-emerald-600" />
@@ -356,30 +369,32 @@ export const DirectPurchasePage: React.FC = () => {
                   type="button"
                   variant="outline"
                   onClick={() => openQuickAdd()}
-                  className="w-full flex items-center justify-center space-x-1.5 py-2 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-xs font-semibold"
+                  className="w-full flex items-center justify-center space-x-1.5 rtl:space-x-reverse py-2 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-xs font-semibold"
                 >
                   <PlusCircle className="h-4 w-4 text-emerald-600" />
-                  <span>+ Add New Product</span>
+                  <span>{language === 'ar' ? '+ إضافة صنف جديد' : '+ Add New Product'}</span>
                 </Button>
               </div>
             </div>
 
             <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
-              <table className="w-full text-xs text-left">
+              <table className="w-full text-xs text-left rtl:text-right">
                 <thead className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold uppercase">
                   <tr>
-                    <th className="p-3">Product</th>
-                    <th className="p-3 w-24">Qty</th>
-                    <th className="p-3 w-28">Cost ($ USD)</th>
-                    <th className="p-3 w-28">Batch #</th>
-                    <th className="p-3 w-32">Expiry Date</th>
-                    <th className="p-3 w-12 text-center">Action</th>
+                    <th className="p-3">{language === 'ar' ? 'المنتج' : 'Product'}</th>
+                    <th className="p-3 w-24">{language === 'ar' ? 'الكمية' : 'Qty'}</th>
+                    <th className="p-3 w-28">{language === 'ar' ? 'التكلفة ($ USD)' : 'Cost ($ USD)'}</th>
+                    <th className="p-3 w-28">{language === 'ar' ? 'رقم الوجبة / التشغيلة' : 'Batch #'}</th>
+                    <th className="p-3 w-32">{language === 'ar' ? 'تاريخ الصلاحية' : 'Expiry Date'}</th>
+                    <th className="p-3 w-12 text-center">{language === 'ar' ? 'إجراء' : 'Action'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {lines.map((l, idx) => (
                     <tr key={idx}>
-                      <td className="p-3 font-bold">{l.product.name_en}</td>
+                      <td className="p-3 font-bold">
+                        {language === 'ar' ? (l.product.name_ar || l.product.name_en) : l.product.name_en}
+                      </td>
                       <td className="p-3">
                         <input
                           type="number"
@@ -407,7 +422,7 @@ export const DirectPurchasePage: React.FC = () => {
                             className="w-full px-2 py-1 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800"
                           />
                         ) : (
-                          'N/A'
+                          '—'
                         )}
                       </td>
                       <td className="p-3">
@@ -420,7 +435,7 @@ export const DirectPurchasePage: React.FC = () => {
                             className="w-full px-2 py-1 border border-slate-300 dark:border-slate-700 rounded bg-white dark:bg-slate-800"
                           />
                         ) : (
-                          'N/A'
+                          '—'
                         )}
                       </td>
                       <td className="p-3 text-center">
@@ -440,12 +455,12 @@ export const DirectPurchasePage: React.FC = () => {
           </div>
         </Card>
 
-        <div className="flex justify-end space-x-3">
+        <div className="flex justify-end space-x-3 rtl:space-x-reverse">
           <Button type="button" variant="outline" onClick={() => navigate('/purchasing/orders')}>
-            Cancel
+            {language === 'ar' ? 'إلغاء' : 'Cancel'}
           </Button>
           <Button type="submit" isLoading={isLoading} size="lg">
-            Confirm Direct Purchase ✓
+            {language === 'ar' ? 'تأكيد الشراء المباشر ✓' : 'Confirm Direct Purchase ✓'}
           </Button>
         </div>
       </form>
@@ -453,7 +468,7 @@ export const DirectPurchasePage: React.FC = () => {
       {/* Quick-Add Product Modal */}
       <Dialog
         isOpen={isQuickAddOpen}
-        title="Add New / Unlisted Product to Catalog"
+        title={language === 'ar' ? 'إضافة صنف جديد غير مدرج إلى الدليل' : 'Add New / Unlisted Product to Catalog'}
         onClose={() => setIsQuickAddOpen(false)}
       >
         <form onSubmit={handleQuickAddProduct} className="space-y-4">
@@ -461,25 +476,25 @@ export const DirectPurchasePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <Input
-              label="Product Name (EN) *"
+              label={language === 'ar' ? 'اسم المنتج بالإنجليزية *' : 'Product Name (EN) *'}
               value={newProductNameEn}
               onChange={(e) => setNewProductNameEn(e.target.value)}
-              placeholder="e.g., Salmon Trout"
+              placeholder={language === 'ar' ? 'مثال: Green Tea, Soda...' : 'e.g., Green Tea, Soda...'}
               required
               autoFocus
             />
             <Input
-              label="Product Name (AR)"
+              label={language === 'ar' ? 'اسم المنتج بالعربية' : 'Product Name (AR)'}
               value={newProductNameAr}
               onChange={(e) => setNewProductNameAr(e.target.value)}
-              placeholder="e.g., سمك سلمون"
+              placeholder={language === 'ar' ? 'مثال: شاي أخضر، صودا...' : 'e.g., شاي أخضر'}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="flex flex-col space-y-1">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Category *
+                {language === 'ar' ? 'القسم / التصنيف *' : 'Category *'}
               </label>
               <select
                 value={newProductCategory || categories[0]?.id || ''}
@@ -489,7 +504,7 @@ export const DirectPurchasePage: React.FC = () => {
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.icon ? `${c.icon} ` : ''}{c.name_en} {c.name_ar ? `(${c.name_ar})` : ''}
+                    {c.icon ? `${c.icon} ` : ''}{language === 'ar' ? (c.name_ar || c.name_en) : c.name_en} {c.name_ar && language !== 'ar' ? `(${c.name_ar})` : ''}
                   </option>
                 ))}
               </select>
@@ -497,7 +512,7 @@ export const DirectPurchasePage: React.FC = () => {
 
             <div className="flex flex-col space-y-1">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Base Unit *
+                {language === 'ar' ? 'وحدة القياس *' : 'Base Unit *'}
               </label>
               <select
                 value={newProductUnit || units[0]?.id || ''}
@@ -507,7 +522,7 @@ export const DirectPurchasePage: React.FC = () => {
               >
                 {units.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.name_en} ({u.symbol})
+                    {language === 'ar' ? (u.name_ar || u.name_en) : u.name_en} ({u.symbol})
                   </option>
                 ))}
               </select>
@@ -516,7 +531,7 @@ export const DirectPurchasePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Input
-              label="Purchase Cost ($ USD) *"
+              label={language === 'ar' ? 'سعر الشراء ($ USD) *' : 'Purchase Cost ($ USD) *'}
               type="number"
               step="any"
               value={newProductCost}
@@ -524,7 +539,7 @@ export const DirectPurchasePage: React.FC = () => {
               required
             />
             <Input
-              label="Selling Price ($ USD) *"
+              label={language === 'ar' ? 'سعر البيع ($ USD) *' : 'Selling Price ($ USD) *'}
               type="number"
               step="any"
               value={newProductPrice}
@@ -532,7 +547,7 @@ export const DirectPurchasePage: React.FC = () => {
               required
             />
             <Input
-              label="Initial Qty to Add *"
+              label={language === 'ar' ? 'الكمية المراد إضافتها *' : 'Initial Qty to Add *'}
               type="number"
               step="0.01"
               value={newProductQty}
@@ -542,26 +557,26 @@ export const DirectPurchasePage: React.FC = () => {
           </div>
 
           <Input
-            label="SKU / Item Code"
+            label={language === 'ar' ? 'رمز الصنف / الباركود (SKU)' : 'SKU / Item Code'}
             value={newProductSku}
             onChange={(e) => setNewProductSku(e.target.value)}
-            placeholder="Auto-generated if left as is"
+            placeholder={language === 'ar' ? 'يتم توليده تلقائياً إذا تُرِك فارغاً' : 'Auto-generated if left as is'}
           />
 
-          <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex justify-end space-x-2 rtl:space-x-reverse pt-3 border-t border-slate-200 dark:border-slate-700">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsQuickAddOpen(false)}
             >
-              Cancel
+              {language === 'ar' ? 'إلغاء' : 'Cancel'}
             </Button>
             <Button
               type="submit"
               isLoading={isCreatingProduct}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              Save &amp; Add to Purchase ✓
+              {language === 'ar' ? 'حفظ وإضافة للشراء ✓' : 'Save & Add to Purchase ✓'}
             </Button>
           </div>
         </form>

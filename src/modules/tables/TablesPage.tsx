@@ -253,7 +253,7 @@ export const TablesPage: React.FC = () => {
             setOpenCustomerName(res.data.name);
             setPhoneLookupMessage(
               language === 'ar'
-                ? `✨ تم العثور على العميل: ${res.data.name}`
+                ? `✨ تم العثور على الزبون: ${res.data.name}`
                 : `✨ Customer found: ${res.data.name}`,
             );
           } else {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useConfigStore } from '../../stores/useConfigStore';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -30,6 +31,13 @@ export const Sidebar: React.FC = () => {
   const { t, language } = useLanguageStore();
   const { pathname } = useLocation();
   const { logout, user, activeRoleMode, setRoleMode, setManagerUnlockModalOpen } = useAuthStore();
+  const { config, loadConfig } = useConfigStore();
+
+  useEffect(() => {
+    if (!config) {
+      loadConfig();
+    }
+  }, [config, loadConfig]);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('gamma_sidebar_collapsed');
@@ -258,10 +266,12 @@ export const Sidebar: React.FC = () => {
           </div>
           {!isCollapsed && (
             <div className="min-w-0 truncate">
-              <h2 className="text-sm font-black text-white tracking-wider flex items-center space-x-1 rtl:space-x-reverse">
-                <span>{language === 'ar' ? 'ابن خالتي' : 'Eben Khalti'}</span>
-                <span className="text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono px-1 py-0.2 rounded font-bold">
-                  v1.0.6
+              <h2 className="text-sm font-black text-white tracking-wider flex items-center space-x-1.5 rtl:space-x-reverse min-w-0">
+                <span className="truncate max-w-[125px]" title={config?.businessName || (language === 'ar' ? 'غاما كافيه' : 'Gamma POS')}>
+                  {config?.businessName || (language === 'ar' ? 'غاما كافيه' : 'Gamma POS')}
+                </span>
+                <span className="text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono px-1 py-0.2 rounded font-bold shrink-0">
+                  v{config?.appVersion || '1.0.9'}
                 </span>
               </h2>
               <span className="text-[10px] text-slate-400 font-medium truncate block tracking-widest uppercase">

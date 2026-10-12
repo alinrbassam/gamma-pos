@@ -501,7 +501,7 @@ export const POSTerminalPage: React.FC = () => {
                 type="text"
                 value={deliveryCustomerName}
                 onChange={(e) => setDeliveryCustomerName(e.target.value)}
-                placeholder={language === 'ar' ? 'اسم العميل' : 'Customer Name'}
+                placeholder={language === 'ar' ? 'اسم الزبون' : 'Customer Name'}
                 className="px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs w-28 focus:outline-none"
               />
               <input

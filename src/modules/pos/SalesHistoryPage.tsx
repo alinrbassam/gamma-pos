@@ -140,7 +140,7 @@ export const SalesHistoryPage: React.FC = () => {
     },
     {
       key: 'customer_name',
-      header: language === 'ar' ? 'العميل' : 'Customer',
+      header: language === 'ar' ? 'الزبون' : 'Customer',
       render: (s) => {
         const isPS = s.order_type === 'playstation' || s.invoice_number?.startsWith('INV-PS-');
         if (isPS) {
@@ -152,7 +152,7 @@ export const SalesHistoryPage: React.FC = () => {
         }
         return (
           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-            {s.customer_name || (language === 'ar' ? 'عميل صالة' : 'Walk-in')}
+            {s.customer_name || (language === 'ar' ? 'زبون صالة' : 'Walk-in')}
           </span>
         );
       },
