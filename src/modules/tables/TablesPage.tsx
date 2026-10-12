@@ -453,7 +453,7 @@ export const TablesPage: React.FC = () => {
     if (!checkingOutTab) return;
     const grandTotalUsd = checkingOutTab.total_usd;
     const numPaidUsd = parseFloat(checkoutPaidUsd) || 0;
-    const numPaidLbp = parseFloat(checkoutPaidLbp) || 0;
+    const numPaidLbp = parseFloat(checkoutPaidLbp.replace(/,/g, '')) || 0;
     const totalPaidUsd = numPaidUsd + (usdToLbpRate > 0 ? numPaidLbp / usdToLbpRate : 0);
 
     if (totalPaidUsd < grandTotalUsd - 0.01) {
@@ -1784,7 +1784,10 @@ export const TablesPage: React.FC = () => {
                     type="text"
                     inputMode="numeric"
                     value={checkoutPaidLbp}
-                    onChange={(e) => setCheckoutPaidLbp(e.target.value.replace(/[^0-9]/g, ''))}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/[^0-9]/g, '');
+                      setCheckoutPaidLbp(digits ? Number(digits).toLocaleString('en-US') : '');
+                    }}
                     placeholder="0"
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-xs font-mono font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
@@ -1794,7 +1797,7 @@ export const TablesPage: React.FC = () => {
               {/* Live Change Calculation */}
               {(() => {
                 const pUsd = parseFloat(checkoutPaidUsd) || 0;
-                const pLbp = parseFloat(checkoutPaidLbp) || 0;
+                const pLbp = parseFloat(checkoutPaidLbp.replace(/,/g, '')) || 0;
                 const totalPaid = pUsd + (usdToLbpRate > 0 ? pLbp / usdToLbpRate : 0);
                 const diffUsd = totalPaid - checkingOutTab.total_usd;
                 const changeLbp = Math.round(Math.max(0, diffUsd) * usdToLbpRate);

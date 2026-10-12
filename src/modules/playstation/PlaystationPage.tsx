@@ -275,7 +275,7 @@ export const PlaystationPage: React.FC = () => {
     if (!checkingOutSession) return;
 
     const numPaidUsd = parseFloat(checkoutPaidUsd) || 0;
-    const numPaidLbp = parseFloat(checkoutPaidLbp) || 0;
+    const numPaidLbp = parseFloat(checkoutPaidLbp.replace(/,/g, '')) || 0;
     const totalPaidUsd = numPaidUsd + (numPaidLbp / usdToLbpRate);
 
     if (totalPaidUsd < checkingOutSession.grandTotalUsd - 0.01) {
@@ -983,11 +983,13 @@ export const PlaystationPage: React.FC = () => {
                   Paid LBP (L.L):
                 </label>
                 <input
-                  type="number"
-                  step="1000"
-                  min="0"
+                  type="text"
+                  inputMode="numeric"
                   value={checkoutPaidLbp}
-                  onChange={(e) => setCheckoutPaidLbp(e.target.value)}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/[^0-9]/g, '');
+                    setCheckoutPaidLbp(digits ? Number(digits).toLocaleString('en-US') : '');
+                  }}
                   placeholder="0"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-base font-bold font-mono focus:outline-none focus:ring-1 focus:ring-[#C83818]"
                 />

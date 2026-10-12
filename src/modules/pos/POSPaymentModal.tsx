@@ -47,15 +47,29 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
   const { usdToLbpRate } = useExchangeRateStore();
   const [activeTab, setActiveTab] = useState<'cash' | 'borrow'>('cash');
 
+  // Helper functions for formatting with commas
+  const formatWithCommas = (val: string | number): string => {
+    if (val === '' || val === null || val === undefined) return '';
+    const digits = String(val).replace(/[^\d]/g, '');
+    if (!digits) return '';
+    return Number(digits).toLocaleString('en-US');
+  };
+
+  const parseCommas = (val: string): number => {
+    const digits = String(val).replace(/[^\d]/g, '');
+    return digits ? Number(digits) : 0;
+  };
+
   // Split Cash state (USD and LBP)
   const [paidUsd, setPaidUsd] = useState<string>('');
   const [paidLbp, setPaidLbp] = useState<string>('');
   const [preferredChangeCurrency, setPreferredChangeCurrency] = useState<'LBP' | 'USD'>('LBP');
 
-  // Borrow / Credit state
+  // Borrow / Credit state (Supports down payments in USD, LBP, or both)
   const [borrowerName, setBorrowerName] = useState('');
   const [borrowerPhone, setBorrowerPhone] = useState('');
-  const [downPaymentUsd, setDownPaymentUsd] = useState<string>('0');
+  const [downPaymentUsd, setDownPaymentUsd] = useState<string>('');
+  const [downPaymentLbp, setDownPaymentLbp] = useState<string>('');
   const [dueDate, setDueDate] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -70,7 +84,8 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
       setPreferredChangeCurrency('LBP');
       setBorrowerName('');
       setBorrowerPhone('');
-      setDownPaymentUsd('0');
+      setDownPaymentUsd('');
+      setDownPaymentLbp('');
       setDueDate('');
       setNotes('');
       setValidationError(null);
@@ -94,7 +109,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
 
   // Real-time calculations
   const numPaidUsd = parseFloat(paidUsd) || 0;
-  const numPaidLbp = parseFloat(paidLbp) || 0;
+  const numPaidLbp = parseCommas(paidLbp);
 
   // Total paid in USD equivalent
   const totalPaidUsdEquivalent = numPaidUsd + (numPaidLbp / usdToLbpRate);
@@ -107,9 +122,12 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
 
   const isFullyPaid = totalPaidUsdEquivalent >= grandTotal - 0.009;
 
-  // Borrow calculation
-  const parsedDownPayment = Math.max(0, parseFloat(downPaymentUsd) || 0);
-  const remainingDebt = Math.max(0, grandTotal - parsedDownPayment);
+  // Borrow down payment calculations
+  const parsedDownPaymentUsd = parseFloat(downPaymentUsd) || 0;
+  const parsedDownPaymentLbp = parseCommas(downPaymentLbp);
+  const totalDownPaymentUsd = parsedDownPaymentUsd + (parsedDownPaymentLbp / usdToLbpRate);
+  const remainingDebt = Math.max(0, Math.round((grandTotal - totalDownPaymentUsd) * 100) / 100);
+  const remainingDebtLbp = Math.round(remainingDebt * usdToLbpRate);
 
   const handlePayCash = () => {
     if (!isFullyPaid) {
@@ -152,7 +170,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
       return;
     }
 
-    if (parsedDownPayment > grandTotal) {
+    if (totalDownPaymentUsd > grandTotal + 0.01) {
       setValidationError(
         language === 'ar'
           ? 'المبلغ المدفوع مقدماً لا يمكن أن يتجاوز الإجمالي'
@@ -161,19 +179,21 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
       return;
     }
 
+    const effectiveDownPaymentUsd = Math.round(totalDownPaymentUsd * 100) / 100;
+
     const payments: {
       paymentMethod: string;
       amount: number;
     }[] = [];
 
-    if (parsedDownPayment > 0) {
+    if (effectiveDownPaymentUsd > 0) {
       payments.push({
         paymentMethod: 'Cash',
-        amount: parsedDownPayment,
+        amount: effectiveDownPaymentUsd,
       });
     }
 
-    if (remainingDebt > 0 || parsedDownPayment === 0) {
+    if (remainingDebt > 0 || effectiveDownPaymentUsd === 0) {
       payments.push({
         paymentMethod: 'Borrow',
         amount: remainingDebt,
@@ -182,7 +202,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
 
     onConfirm(
       payments,
-      parsedDownPayment,
+      effectiveDownPaymentUsd,
       {
         customerName: borrowerName.trim(),
         customerPhone: borrowerPhone.trim() || undefined,
@@ -190,8 +210,8 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
         notes: notes.trim() || undefined,
       },
       {
-        paidUsd: parsedDownPayment,
-        paidLbp: 0,
+        paidUsd: parsedDownPaymentUsd,
+        paidLbp: parsedDownPaymentLbp,
         changeUsd: 0,
         changeLbp: 0,
         exchangeRate: usdToLbpRate,
@@ -350,12 +370,11 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    step="1000"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
                     value={paidLbp}
                     onChange={(e) => {
-                      setPaidLbp(e.target.value);
+                      setPaidLbp(formatWithCommas(e.target.value));
                       setValidationError(null);
                     }}
                     placeholder="0"
@@ -370,7 +389,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
                   <button
                     type="button"
                     onClick={() => {
-                      setPaidLbp(grandTotalLbp.toString());
+                      setPaidLbp(formatWithCommas(grandTotalLbp));
                       setPaidUsd('');
                     }}
                     className="px-2 py-1 bg-white dark:bg-[#0E0F12] border border-slate-200 dark:border-[#282C35] hover:bg-[#C83818]/10 text-[11px] font-bold text-[#C83818] dark:text-[#DF7E63] rounded-lg transition-colors"
@@ -385,7 +404,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
                         key={v}
                         type="button"
                         onClick={() => {
-                          setPaidLbp(v.toString());
+                          setPaidLbp(formatWithCommas(v));
                           setPaidUsd('');
                         }}
                         className="px-2 py-1 bg-white dark:bg-[#0E0F12] border border-slate-200 dark:border-[#282C35] hover:bg-slate-100 dark:hover:bg-[#282C35] text-[11px] font-semibold text-slate-700 dark:text-slate-300 rounded-lg transition-colors"
@@ -423,7 +442,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
                     </button>
                     <button
                       type="button"
-                      onClick={() => setPaidLbp((numPaidLbp + remainingLbp).toString())}
+                      onClick={() => setPaidLbp(formatWithCommas(numPaidLbp + remainingLbp))}
                       className="px-2 py-1 bg-white dark:bg-[#0E0F12] border border-amber-300 dark:border-amber-700 rounded-lg text-[10px] font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-100"
                     >
                       + Fill LBP
@@ -553,22 +572,88 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
               </div>
             </div>
 
+            {/* Dual Currency Down Payment: USD and LBP */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'ar' ? 'دفعة أولى نقدية ($):' : 'Down Payment in USD ($):'}
+                  {language === 'ar' ? 'دفعة أولى بالدولار ($):' : 'Down Payment in USD ($):'}
                 </label>
-                <input
-                  type="number"
-                  step="any"
-                  min="0"
-                  value={downPaymentUsd}
-                  onChange={(e) => setDownPaymentUsd(e.target.value)}
-                  placeholder="0"
-                  className="w-full px-3 py-2 bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-xs font-bold font-mono focus:outline-none focus:border-amber-500"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 font-bold text-sm">
+                    $
+                  </div>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={downPaymentUsd}
+                    onChange={(e) => {
+                      setDownPaymentUsd(e.target.value);
+                      setValidationError(null);
+                    }}
+                    placeholder="0.00"
+                    className="w-full pl-7 pr-3 py-2 bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-xs font-bold font-mono focus:outline-none focus:border-amber-500"
+                  />
+                </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'ar' ? 'دفعة أولى بالليرة (L.L):' : 'Down Payment in LBP (L.L):'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={downPaymentLbp}
+                    onChange={(e) => {
+                      setDownPaymentLbp(formatWithCommas(e.target.value));
+                      setValidationError(null);
+                    }}
+                    placeholder="0"
+                    className="w-full px-3 pr-10 py-2 bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-xs font-bold font-mono focus:outline-none focus:border-amber-500"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400 text-[11px] font-semibold">
+                    L.L
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Presets for Down Payment */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-slate-400 font-semibold">
+                {language === 'ar' ? 'أوراق سريعة للدفعة:' : 'Quick bills:'}
+              </span>
+              {[250000, 500000, 1000000].map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => {
+                    setDownPaymentLbp(formatWithCommas(val));
+                    setValidationError(null);
+                  }}
+                  className="px-2 py-0.5 bg-white dark:bg-[#0E0F12] border border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-[10px] font-bold text-amber-700 dark:text-amber-300 rounded-lg transition-colors"
+                >
+                  +{formatLBP(val)}
+                </button>
+              ))}
+              {(downPaymentUsd || downPaymentLbp) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDownPaymentUsd('');
+                    setDownPaymentLbp('');
+                    setValidationError(null);
+                  }}
+                  className="px-2 py-0.5 text-[10px] font-bold text-rose-500 hover:text-rose-600 rounded-lg transition-colors ml-auto rtl:ml-0 rtl:mr-auto"
+                >
+                  {language === 'ar' ? 'مسح الدفعة' : 'Clear'}
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5 text-amber-600" />
@@ -581,29 +666,45 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
                   className="w-full px-3 py-2 bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500"
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
+                  <FileText className="h-3.5 w-3.5 text-amber-600" />
+                  <span>{language === 'ar' ? 'ملاحظات إضافية:' : 'Notes:'}</span>
+                </label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={language === 'ar' ? 'أي تفاصيل أخرى...' : 'Additional notes...'}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-xs font-medium focus:outline-none focus:border-amber-500"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1">
-                <FileText className="h-3.5 w-3.5 text-amber-600" />
-                <span>{language === 'ar' ? 'ملاحظات إضافية:' : 'Notes:'}</span>
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={language === 'ar' ? 'أي تفاصيل أخرى...' : 'Additional notes...'}
-                rows={2}
-                className="w-full px-3 py-1.5 bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-xs font-medium focus:outline-none focus:border-amber-500"
-              />
-            </div>
-
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 flex justify-between items-center text-xs">
-              <span className="font-bold text-amber-800 dark:text-amber-300">
-                {language === 'ar' ? 'المبلغ المتبقي كدين:' : 'Remaining Debt:'}
-              </span>
-              <span className="font-mono font-black text-amber-600 dark:text-amber-400 text-sm sm:text-base">
-                {formatUSD(remainingDebt)}
-              </span>
+            {/* Remaining Debt Highlight Banner */}
+            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800 flex justify-between items-center text-xs">
+              <div>
+                <span className="font-bold text-amber-800 dark:text-amber-300 block">
+                  {language === 'ar' ? 'المبلغ المتبقي كدين في الذمة:' : 'Remaining Debt / Credit:'}
+                </span>
+                {totalDownPaymentUsd > 0 && (
+                  <span className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold block mt-0.5">
+                    {language === 'ar' ? 'الدفعة الأولى: ' : 'Down Payment: '}
+                    {parsedDownPaymentUsd > 0 && formatUSD(parsedDownPaymentUsd)}
+                    {parsedDownPaymentUsd > 0 && parsedDownPaymentLbp > 0 ? ' + ' : ''}
+                    {parsedDownPaymentLbp > 0 && formatLBP(parsedDownPaymentLbp)}
+                  </span>
+                )}
+              </div>
+              <div className="text-right">
+                <span className="font-mono font-black text-amber-600 dark:text-amber-400 text-base sm:text-lg block">
+                  {formatUSD(remainingDebt)}
+                </span>
+                <span className="font-mono font-bold text-slate-500 dark:text-slate-400 text-xs">
+                  {formatLBP(remainingDebtLbp)}
+                </span>
+              </div>
             </div>
 
             {validationError && (
