@@ -665,10 +665,10 @@ export const POSTerminalPage: React.FC = () => {
 
                   <div className="pt-2 border-t border-slate-100 dark:border-[#21242B] flex flex-col items-baseline">
                     <span className="text-sm sm:text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
-                      {formatUSD(priceUsd)}
+                      {formatLBP(priceLbp)}
                     </span>
                     <span className="text-[10px] font-semibold text-slate-400 font-mono">
-                      {formatLBP(priceLbp)}
+                      {formatUSD(priceUsd)}
                     </span>
                   </div>
                 </div>
@@ -741,10 +741,10 @@ export const POSTerminalPage: React.FC = () => {
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-emerald-600 dark:text-emerald-400 font-mono text-xs sm:text-sm font-bold block">
-                      {formatUSD(lineSubUsd)}
+                      {formatLBP(lineSubLbp)}
                     </span>
                     <span className="text-[9px] text-slate-400 font-mono font-medium block">
-                      {formatLBP(lineSubLbp)}
+                      {formatUSD(lineSubUsd)}
                     </span>
                   </div>
                 </div>
@@ -808,23 +808,28 @@ export const POSTerminalPage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Price per Unit in USD ($) */}
-                  <div
-                    className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-xl px-1.5 py-1 border border-slate-200 dark:border-[#282C35] hover:border-emerald-500 transition-colors shadow-xs"
-                    title={language === 'ar' ? 'سعر الوحدة ($)' : 'Unit price in USD ($)'}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="text-[10px] text-slate-400 font-bold">$</span>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={item.unitPrice}
-                      onChange={(e) =>
-                        updateCartItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)
-                      }
-                      className="w-12 text-center bg-transparent font-bold font-mono focus:outline-none text-emerald-600 dark:text-emerald-400 text-[11px]"
-                    />
+                  {/* Price per Unit in USD & L.L. */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 font-mono font-bold" title="Unit Price in L.L.">
+                      {formatLBP(Math.round(item.unitPrice * usdToLbpRate))}
+                    </span>
+                    <div
+                      className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-xl px-1.5 py-0.5 border border-slate-200 dark:border-[#282C35] hover:border-emerald-500 transition-colors shadow-xs"
+                      title={language === 'ar' ? 'سعر الوحدة بالدولار' : 'Unit price in USD ($)'}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="text-[9px] text-slate-400 font-bold">$</span>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={item.unitPrice}
+                        onChange={(e) =>
+                          updateCartItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)
+                        }
+                        className="w-10 text-center bg-transparent font-bold font-mono focus:outline-none text-emerald-600 dark:text-emerald-400 text-[10px]"
+                      />
+                    </div>
                   </div>
 
                   <button

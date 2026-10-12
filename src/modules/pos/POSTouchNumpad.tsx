@@ -186,18 +186,18 @@ export const POSTouchNumpad: React.FC<Props> = ({
         <div className="min-w-0">
           <div className="flex items-center space-x-1.5 rtl:space-x-reverse">
             <span className="text-[10px] text-amber-400 font-black uppercase tracking-wider">
-              {isAr ? 'الإجمالي النهائي' : 'GRAND TOTAL'}
+              {isAr ? 'الإجمالي النهائي (ل.ل)' : 'GRAND TOTAL (L.L.)'}
             </span>
             <span className="text-[9px] bg-amber-500/20 text-amber-300 font-mono px-1.5 py-0.2 rounded border border-amber-500/30">
-              {usdToLbpRate.toLocaleString()} L.L.
+              $1 = {usdToLbpRate.toLocaleString()} L.L.
             </span>
           </div>
           <div className="flex items-baseline space-x-2 rtl:space-x-reverse mt-0.5">
             <span className="text-xl sm:text-2xl font-black font-mono text-emerald-400 tracking-tight">
-              {formatUSD(grandTotalUsd)}
+              {formatLBP(grandTotalLbp)}
             </span>
             <span className="text-xs sm:text-sm font-bold font-mono text-slate-300">
-              / {formatLBP(grandTotalLbp)}
+              ({formatUSD(grandTotalUsd)})
             </span>
           </div>
         </div>
@@ -441,7 +441,42 @@ export const POSTouchNumpad: React.FC<Props> = ({
           {/* TAB 2: FAST CASH & PRESET BILLS */}
           {activeTab === 'cash' && (
             <div className="space-y-2">
-              {/* USD Presets */}
+              {/* LBP Presets (First & Primary) */}
+              <div>
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-1">
+                  <span className="text-amber-600 dark:text-amber-400 font-extrabold">{isAr ? 'أوراق الليرة اللبنانية (L.L.):' : 'Lebanese Cash Bills (L.L.):'}</span>
+                  <button
+                    onClick={() => handleExactCash('LBP')}
+                    className="text-amber-600 dark:text-amber-400 font-extrabold hover:underline"
+                  >
+                    {isAr ? 'كاش تمام (ل.ل)' : 'Exact (L.L.)'}
+                  </button>
+                </div>
+                <div className="grid grid-cols-6 gap-1">
+                  {[
+                    { label: '100K', val: 100000 },
+                    { label: '250K', val: 250000 },
+                    { label: '500K', val: 500000 },
+                    { label: '1M', val: 1000000 },
+                    { label: '2M', val: 2000000 },
+                    { label: '5M', val: 5000000 },
+                  ].map((item) => (
+                    <button
+                      key={item.val}
+                      onClick={() => handleSelectQuickLbp(item.val)}
+                      className={`h-9 font-black font-mono text-xs rounded-xl border transition-all ${
+                        tenderedLbp === item.val
+                          ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                          : 'bg-white dark:bg-[#1A1C21] text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 border-slate-200 dark:border-[#282C35]'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* USD Presets (Secondary) */}
               <div>
                 <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-1">
                   <span>{isAr ? 'أوراق الدولار ($):' : 'USD Cash Bills ($):'}</span>
@@ -469,39 +504,6 @@ export const POSTouchNumpad: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* LBP Presets */}
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-1">
-                  <span>{isAr ? 'أوراق الليرة (L.L.):' : 'LBP Cash Bills (L.L.):'}</span>
-                  <button
-                    onClick={() => handleExactCash('LBP')}
-                    className="text-amber-600 dark:text-amber-400 font-extrabold hover:underline"
-                  >
-                    {isAr ? 'كاش تمام (ل.ل)' : 'Exact (L.L.)'}
-                  </button>
-                </div>
-                <div className="grid grid-cols-4 gap-1">
-                  {[
-                    { label: '100K', val: 100000 },
-                    { label: '250K', val: 250000 },
-                    { label: '500K', val: 500000 },
-                    { label: '1M', val: 1000000 },
-                  ].map((item) => (
-                    <button
-                      key={item.val}
-                      onClick={() => handleSelectQuickLbp(item.val)}
-                      className={`h-9 font-black font-mono text-xs rounded-xl border transition-all ${
-                        tenderedLbp === item.val
-                          ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-                          : 'bg-white dark:bg-[#1A1C21] text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 border-slate-200 dark:border-[#282C35]'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Live Change Indicator */}
               <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-xl flex items-center justify-between text-xs">
                 <div>
@@ -509,10 +511,10 @@ export const POSTouchNumpad: React.FC<Props> = ({
                     {isAr ? 'المدفوع من الزبون:' : 'Tendered Cash:'}
                   </span>
                   <span className="font-extrabold text-slate-800 dark:text-slate-200 font-mono">
-                    {tenderedUsd
-                      ? formatUSD(tenderedUsd)
-                      : tenderedLbp
+                    {tenderedLbp
                       ? formatLBP(tenderedLbp)
+                      : tenderedUsd
+                      ? formatUSD(tenderedUsd)
                       : isAr
                       ? 'كاش تمام (Exact)'
                       : 'Exact Amount'}
@@ -523,7 +525,7 @@ export const POSTouchNumpad: React.FC<Props> = ({
                     {isAr ? 'الباقي للزبون (Change):' : 'Customer Change:'}
                   </span>
                   <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono text-sm">
-                    {changeLbp > 0 ? `${formatLBP(changeLbp)} (${formatUSD(changeUsd)})` : '$0.00'}
+                    {changeLbp > 0 ? `${formatLBP(changeLbp)} (${formatUSD(changeUsd)})` : (isAr ? '0 ل.ل' : '0 L.L.')}
                   </span>
                 </div>
               </div>
