@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useConfigStore } from '../../stores/useConfigStore';
+import { useCommercialStore } from '../../stores/useCommercialStore';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -32,12 +33,16 @@ export const Sidebar: React.FC = () => {
   const { pathname } = useLocation();
   const { logout, user, activeRoleMode, setRoleMode, setManagerUnlockModalOpen } = useAuthStore();
   const { config, loadConfig } = useConfigStore();
+  const { updateStatus, checkForUpdates } = useCommercialStore();
 
   useEffect(() => {
     if (!config) {
       loadConfig();
     }
-  }, [config, loadConfig]);
+    if (!updateStatus) {
+      checkForUpdates().catch(() => {});
+    }
+  }, [config, loadConfig, updateStatus, checkForUpdates]);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('gamma_sidebar_collapsed');
@@ -271,7 +276,7 @@ export const Sidebar: React.FC = () => {
                   {config?.businessName || (language === 'ar' ? 'غاما كافيه' : 'Gamma POS')}
                 </span>
                 <span className="text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-mono px-1 py-0.2 rounded font-bold shrink-0">
-                  v{config?.appVersion || '1.0.9'}
+                  v{updateStatus?.currentVersion || config?.appVersion || '1.0.14'}
                 </span>
               </h2>
               <span className="text-[10px] text-slate-400 font-medium truncate block tracking-widest uppercase">

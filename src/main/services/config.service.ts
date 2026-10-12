@@ -40,7 +40,8 @@ export class ConfigService {
   }
 
   public getConfig(): AppConfig {
-    return { ...this.currentConfig };
+    const liveVersion = typeof app !== 'undefined' && app.getVersion ? app.getVersion() : this.currentConfig.appVersion;
+    return { ...this.currentConfig, appVersion: liveVersion };
   }
 
   public updateConfig(partialConfig: Partial<AppConfig>): AppConfig {
@@ -49,20 +50,21 @@ export class ConfigService {
     this.currentConfig = validated;
     this.saveConfig();
     logger.info('ConfigService', 'App configuration updated successfully');
-    return this.currentConfig;
+    return this.getConfig();
   }
 
   private loadConfig(): AppConfig {
+    const liveVersion = typeof app !== 'undefined' && app.getVersion ? app.getVersion() : '1.0.14';
     try {
       if (fs.existsSync(this.configFilePath)) {
         const fileContent = fs.readFileSync(this.configFilePath, 'utf-8');
         const parsed = JSON.parse(fileContent);
-        return AppConfigSchema.parse({ ...defaultConfig, ...parsed });
+        return AppConfigSchema.parse({ ...defaultConfig, ...parsed, appVersion: liveVersion });
       }
     } catch (err) {
       logger.error('ConfigService', 'Error loading config, falling back to defaults', err);
     }
-    return defaultConfig;
+    return { ...defaultConfig, appVersion: liveVersion };
   }
 
   private saveConfig(): void {

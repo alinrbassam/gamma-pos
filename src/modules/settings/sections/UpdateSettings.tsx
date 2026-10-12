@@ -7,6 +7,40 @@ import { Badge } from '@components/ui/Badge';
 import { RefreshCw, CheckCircle2, Download, Sparkles, ShieldCheck } from 'lucide-react';
 
 const VERSION_CHANGELOG: Record<string, { en: string[]; ar: string[] }> = {
+  '1.0.15': {
+    en: [
+      'Live Version Synchronization: Sidebar top header badge now always displays the exact active version installed.',
+      'Config Persistence Fix: Runtime app version is decoupled from static store configuration.',
+    ],
+    ar: [
+      'مزامنة شارة الإصدار: يعرض الشعار في أعلى القائمة الجانبية رقم الإصدار المثبت الفعلي بدقة.',
+      'فصل إعدادات المتجر عن رقم الإصدار: منع ثبات رقم الإصدار على قيم سابقة في ملف الإعدادات.',
+    ],
+  },
+  '1.0.14': {
+    en: [
+      'PS5 1-Hour Round Up: Automatic full hour billing with a 5-minute grace period buffer.',
+      'Editable PS5 Gaming Price: Override and adjust gaming time cost directly at checkout with 1-click hour presets.',
+      'Table Transfers: Customize gaming charges before transferring active console sessions to dine-in tables.',
+    ],
+    ar: [
+      'احتساب ساعة كاملة للبلايستيشن: احتساب الساعة كاملة تلقائياً مع مهلة سماح 5 دقائق.',
+      'تعديل سعر وقت اللعب: إمكانية تعديل سعر الجلسة مباشرة عند الدفع أو بضغطة زر لساعة أو ساعتين.',
+      'تحويل مرن للطاولات: إمكانية تعديل سعر وقت اللعب قبل تحويل الحساب لطاولة الصالة.',
+    ],
+  },
+  '1.0.13': {
+    en: [
+      'Zero Input Latency: Fixed keyboard typing delay and click freezing on modal dialogs.',
+      'Smooth Background Updates: Throttled download event stream to eliminate Chromium thread starvation.',
+      'Real-time Counter Optimization: Stopwatch ticks pause cleanly during active modals to protect focus.',
+    ],
+    ar: [
+      'سرعة واستجابة فورية للكتابة: معالجة التأخير والتعليق عند إدخال البيانات في النوافذ المنبثقة.',
+      'تحديثات خلفية انسيابية: ضبط تحميل التحديثات دون أي استهلاك زائد لمعالج الواجهة.',
+      'تحسين العدادات الحية: إيقاف تحديثات المؤقت مؤقتاً أثناء فتح النوافذ لمنع إعادة تحميل الصفحة.',
+    ],
+  },
   '1.0.12': {
     en: [
       'Exact LBP Precision: Fixed rounding discrepancy so typed LBP amounts (e.g. 100,000 L.L) match Grand Total exactly.',
