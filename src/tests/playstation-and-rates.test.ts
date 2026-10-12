@@ -273,4 +273,50 @@ describe('RatesService & PlaystationService', () => {
     const station = state.stations.find((s: any) => s.id === 'ps-1');
     expect(station!.activeSession).toBeNull();
   });
+
+  it('should bill 1 hour for up to 65 minutes (5-min buffer) and 2 hours beyond 65 mins', () => {
+    const session1 = playstationService.startSession({
+      stationId: 'ps-1',
+      playersCount: 1,
+    });
+    // Simulate 50 minutes played (under 65 mins)
+    const s1 = sessionsStore.find((s) => s.id === session1.id);
+    s1.start_time = new Date(Date.now() - 50 * 60 * 1000).toISOString();
+
+    const stopped1 = playstationService.stopSession(session1.id);
+    expect(stopped1.gamingTotalLbp).toBe(session1.hourlyRateLbp * 1);
+
+    const session2 = playstationService.startSession({
+      stationId: 'ps-2',
+      playersCount: 2,
+    });
+    // Simulate 75 minutes played (1h 15m -> beyond 65 min buffer -> 2 hours)
+    const s2 = sessionsStore.find((s) => s.id === session2.id);
+    s2.start_time = new Date(Date.now() - 75 * 60 * 1000).toISOString();
+
+    const stopped2 = playstationService.stopSession(session2.id);
+    expect(stopped2.gamingTotalLbp).toBe(session2.hourlyRateLbp * 2);
+  });
+
+  it('should allow custom gaming fee override at checkout for friends', () => {
+    const session = playstationService.startSession({
+      stationId: 'ps-1',
+      playersCount: 2,
+    });
+    // Simulate 75 minutes played (normally 2 hours = 800,000 LBP for 2 players)
+    const s = sessionsStore.find((s) => s.id === session.id);
+    s.start_time = new Date(Date.now() - 75 * 60 * 1000).toISOString();
+
+    // Cashier overrides to 1 hour price: 400,000 LBP
+    const result = playstationService.checkoutSession({
+      sessionId: session.id,
+      paidUsd: 10,
+      paidLbp: 0,
+      changeUsd: 5.5,
+      changeLbp: 0,
+      customGamingLbp: 400000,
+    });
+
+    expect(result.grandTotalLbp).toBe(400000);
+  });
 });

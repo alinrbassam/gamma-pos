@@ -268,7 +268,11 @@ export class PlaystationService {
     return true;
   }
 
-  public stopSession(sessionId: string): PlaystationSessionData {
+  public stopSession(
+    sessionId: string,
+    customGamingLbp?: number,
+    customGamingUsd?: number,
+  ): PlaystationSessionData {
     const session = this.db.prepare("SELECT * FROM playstation_sessions WHERE id = ?").get(sessionId) as any;
     if (!session) {
       throw new Error(`Session not found: ${sessionId}`);
@@ -278,10 +282,28 @@ export class PlaystationService {
     const startMs = new Date(session.start_time).getTime();
     const nowMs = Date.now();
     const elapsedSeconds = Math.max(0, Math.floor((nowMs - startMs) / 1000));
-    const hoursFraction = elapsedSeconds / 3600;
+    const elapsedMinutes = Math.floor(elapsedSeconds / 60);
 
-    const gamingTotalLbp = Math.round(hoursFraction * session.hourly_rate_lbp);
-    const gamingTotalUsd = rates.usdToLbpRate > 0 ? Math.round((gamingTotalLbp / rates.usdToLbpRate) * 100) / 100 : 0;
+    // 1-hour round up with 5-minute buffer:
+    // 0 to 65 mins -> 1 hour; 66 to 125 mins -> 2 hours; 126 to 185 mins -> 3 hours
+    const billedHours = Math.max(1, Math.ceil(Math.max(0, elapsedMinutes - 5) / 60));
+
+    let gamingTotalLbp: number;
+    let gamingTotalUsd: number;
+
+    if (customGamingLbp !== undefined && customGamingLbp >= 0) {
+      gamingTotalLbp = Math.round(customGamingLbp);
+      gamingTotalUsd =
+        customGamingUsd !== undefined && customGamingUsd >= 0
+          ? Math.round(customGamingUsd * 100) / 100
+          : rates.usdToLbpRate > 0
+          ? Math.round((gamingTotalLbp / rates.usdToLbpRate) * 100) / 100
+          : 0;
+    } else {
+      gamingTotalLbp = Math.round(billedHours * session.hourly_rate_lbp);
+      gamingTotalUsd =
+        rates.usdToLbpRate > 0 ? Math.round((gamingTotalLbp / rates.usdToLbpRate) * 100) / 100 : 0;
+    }
 
     const items = this.db
       .prepare('SELECT * FROM playstation_session_items WHERE session_id = ?')
@@ -310,7 +332,7 @@ export class PlaystationService {
       `)
       .run(endNow, elapsedSeconds, gamingTotalUsd, gamingTotalLbp, ordersTotalUsd, ordersTotalLbp, grandTotalUsd, grandTotalLbp, sessionId);
 
-    logger.info('PlaystationService', `Calculated totals for session ${sessionId}: Gaming=$${gamingTotalUsd}, Orders=$${ordersTotalUsd}`);
+    logger.info('PlaystationService', `Calculated totals for session ${sessionId} (${billedHours}h billed): Gaming=$${gamingTotalUsd} (${gamingTotalLbp} LBP), Orders=$${ordersTotalUsd}`);
 
     return {
       id: session.id,
@@ -347,8 +369,13 @@ export class PlaystationService {
   /**
    * Send PlayStation session to a Dine-In table running tab
    */
-  public sendSessionToTable(sessionId: string, tableId: string): any {
-    const sessionData = this.stopSession(sessionId);
+  public sendSessionToTable(
+    sessionId: string,
+    tableId: string,
+    customGamingLbp?: number,
+    customGamingUsd?: number,
+  ): any {
+    const sessionData = this.stopSession(sessionId, customGamingLbp, customGamingUsd);
     const table = this.db.prepare('SELECT * FROM dine_in_tables WHERE id = ? AND is_active = 1').get(tableId) as any;
     if (!table) {
       throw new Error(`Table ${tableId} not found`);
@@ -489,8 +516,10 @@ export class PlaystationService {
     paidLbp: number;
     changeUsd: number;
     changeLbp: number;
+    customGamingLbp?: number;
+    customGamingUsd?: number;
   }): { invoiceNumber: string; grandTotalUsd: number; grandTotalLbp: number } {
-    const sessionData = this.stopSession(params.sessionId);
+    const sessionData = this.stopSession(params.sessionId, params.customGamingLbp, params.customGamingUsd);
 
     const invoiceNumber = `INV-PS-${Date.now().toString().slice(-6)}`;
     const saleId = crypto.randomUUID();

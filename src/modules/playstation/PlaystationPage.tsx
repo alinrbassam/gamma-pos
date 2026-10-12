@@ -88,7 +88,10 @@ export const PlaystationPage: React.FC = () => {
     grandTotalUsd: number;
     grandTotalLbp: number;
     elapsedFormatted: string;
+    billedHours: number;
+    defaultTimeCostLbp: number;
   } | null>(null);
+  const [customGamingCostLbp, setCustomGamingCostLbp] = useState<string>('');
 
   // Send Session to Table Modal
   const [sendingToTableSession, setSendingToTableSession] = useState<{
@@ -101,7 +104,10 @@ export const PlaystationPage: React.FC = () => {
     grandTotalUsd: number;
     grandTotalLbp: number;
     elapsedFormatted: string;
+    billedHours: number;
+    defaultTimeCostLbp: number;
   } | null>(null);
+  const [sendToTableCustomGamingLbp, setSendToTableCustomGamingLbp] = useState<string>('');
   const [dineInTables, setDineInTables] = useState<any[]>([]);
   const [selectedTargetTableId, setSelectedTargetTableId] = useState<string>('');
 
@@ -207,10 +213,15 @@ export const PlaystationPage: React.FC = () => {
   const calculateLiveFigures = (session: ActiveSession) => {
     const startMs = new Date(session.start_time).getTime();
     const elapsedSeconds = Math.max(0, Math.floor((now - startMs) / 1000));
+    const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+
+    // 1-hour round up with a 5-minute buffer:
+    // 0 to 65 mins -> 1 hour; 66 to 125 mins -> 2 hours; 126 to 185 mins -> 3 hours
+    const billedHours = Math.max(1, Math.ceil(Math.max(0, elapsedMinutes - 5) / 60));
 
     // LBP hourly rate is dynamic: players_count * ratePerPlayerHourLbp
     const hourlyRateLbp = session.hourly_rate_lbp || (session.players_count * ratePerPlayerHourLbp);
-    const timeCostLbp = Math.round((elapsedSeconds / 3600) * hourlyRateLbp);
+    const timeCostLbp = Math.round(billedHours * hourlyRateLbp);
     const timeCostUsd = usdToLbpRate > 0 ? timeCostLbp / usdToLbpRate : 0;
 
     let itemsCostUsd = 0;
@@ -224,6 +235,8 @@ export const PlaystationPage: React.FC = () => {
 
     return {
       elapsedSeconds,
+      elapsedMinutes,
+      billedHours,
       elapsedFormatted: formatStopwatch(elapsedSeconds),
       hourlyRateLbp,
       timeCostLbp,
@@ -273,9 +286,67 @@ export const PlaystationPage: React.FC = () => {
       grandTotalUsd: live.totalCostUsd,
       grandTotalLbp: live.totalCostLbp,
       elapsedFormatted: live.elapsedFormatted,
+      billedHours: live.billedHours,
+      defaultTimeCostLbp: live.timeCostLbp,
     });
+    setCustomGamingCostLbp(live.timeCostLbp.toLocaleString('en-US'));
     setCheckoutPaidUsd(live.totalCostUsd.toFixed(2));
     setCheckoutPaidLbp('');
+  };
+
+  const handleCustomGamingCostChange = (newLbpFormatted: string) => {
+    setCustomGamingCostLbp(newLbpFormatted);
+    if (!checkingOutSession) return;
+
+    const digitsOnly = newLbpFormatted.replace(/[^0-9]/g, '');
+    const customLbp = digitsOnly ? parseInt(digitsOnly, 10) : 0;
+    const customUsd = usdToLbpRate > 0 ? customLbp / usdToLbpRate : 0;
+
+    const itemsUsd = checkingOutSession.itemsCostUsd;
+    const itemsLbp = checkingOutSession.itemsCostLbp;
+
+    const newGrandTotalUsd = Math.round((customUsd + itemsUsd) * 100) / 100;
+    const newGrandTotalLbp = customLbp + itemsLbp;
+
+    setCheckingOutSession((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        timeCostLbp: customLbp,
+        timeCostUsd: customUsd,
+        grandTotalUsd: newGrandTotalUsd,
+        grandTotalLbp: newGrandTotalLbp,
+      };
+    });
+
+    setCheckoutPaidUsd(newGrandTotalUsd.toFixed(2));
+    setCheckoutPaidLbp('');
+  };
+
+  const handleSendToTableCustomGamingChange = (newLbpFormatted: string) => {
+    setSendToTableCustomGamingLbp(newLbpFormatted);
+    if (!sendingToTableSession) return;
+
+    const digitsOnly = newLbpFormatted.replace(/[^0-9]/g, '');
+    const customLbp = digitsOnly ? parseInt(digitsOnly, 10) : 0;
+    const customUsd = usdToLbpRate > 0 ? customLbp / usdToLbpRate : 0;
+
+    const itemsUsd = sendingToTableSession.itemsCostUsd;
+    const itemsLbp = sendingToTableSession.itemsCostLbp;
+
+    const newGrandTotalUsd = Math.round((customUsd + itemsUsd) * 100) / 100;
+    const newGrandTotalLbp = customLbp + itemsLbp;
+
+    setSendingToTableSession((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        timeCostLbp: customLbp,
+        timeCostUsd: customUsd,
+        grandTotalUsd: newGrandTotalUsd,
+        grandTotalLbp: newGrandTotalLbp,
+      };
+    });
   };
 
   // Confirm Checkout & Stop
@@ -303,6 +374,8 @@ export const PlaystationPage: React.FC = () => {
           paidLbp: numPaidLbp,
           changeUsd: Math.round(changeUsd * 100) / 100,
           changeLbp,
+          customGamingLbp: checkingOutSession.timeCostLbp,
+          customGamingUsd: checkingOutSession.timeCostUsd,
         });
 
         if (res.success) {
@@ -330,6 +403,8 @@ export const PlaystationPage: React.FC = () => {
         const res = await window.api.sendPlaystationSessionToTable({
           sessionId: sendingToTableSession.session.id,
           tableId: selectedTargetTableId,
+          customGamingLbp: sendingToTableSession.timeCostLbp,
+          customGamingUsd: sendingToTableSession.timeCostUsd,
         });
 
         if (res.success) {
@@ -529,6 +604,11 @@ export const PlaystationPage: React.FC = () => {
                         <div className="text-3xl font-black font-mono tracking-wider text-[#DF7E63]">
                           {live.elapsedFormatted}
                         </div>
+                        <span className="inline-block mt-1 text-[11px] font-bold text-amber-400">
+                          ⚡ {language === 'ar'
+                            ? (live.billedHours === 1 ? 'المحسوب: ساعة واحدة' : live.billedHours === 2 ? 'المحسوب: ساعتان' : `المحسوب: ${live.billedHours} ساعات`)
+                            : `Billed: ${live.billedHours} ${live.billedHours === 1 ? 'Hour' : 'Hours'}`}
+                        </span>
                       </div>
 
                       <div className="text-right">
@@ -653,7 +733,10 @@ export const PlaystationPage: React.FC = () => {
                               grandTotalUsd: liveData.totalCostUsd,
                               grandTotalLbp: liveData.totalCostLbp,
                               elapsedFormatted: liveData.elapsedFormatted,
+                              billedHours: liveData.billedHours,
+                              defaultTimeCostLbp: liveData.timeCostLbp,
                             });
+                            setSendToTableCustomGamingLbp(liveData.timeCostLbp.toLocaleString('en-US'));
                             if (window.api?.getTablesState) {
                               window.api.getTablesState().then((r) => {
                                 if (r.success && r.data?.tablesWithTabs) {
@@ -941,24 +1024,107 @@ export const PlaystationPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Bill Breakdown */}
-            <div className="p-4 bg-slate-50 dark:bg-[#1A1C21]/60 rounded-2xl border border-slate-200 dark:border-[#282C35] space-y-2 text-xs">
-              <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                <span>Gaming Time ({checkingOutSession.elapsedFormatted}):</span>
-                <span className="font-mono font-bold">
-                  {formatUSD(checkingOutSession.timeCostUsd)} ({formatLBP(checkingOutSession.timeCostLbp)})
-                </span>
+            {/* Bill Breakdown & Editable Gaming Price */}
+            <div className="p-4 bg-slate-50 dark:bg-[#1A1C21]/60 rounded-2xl border border-slate-200 dark:border-[#282C35] space-y-3 text-xs">
+              {/* Gaming Time Section */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-slate-700 dark:text-slate-300">
+                  <div className="flex items-center gap-1.5">
+                    <Gamepad2 className="w-3.5 h-3.5 text-[#C83818]" />
+                    <span className="font-bold">
+                      {language === 'ar' ? 'وقت اللعب المحسوب:' : 'Calculated Gaming Time:'}
+                    </span>
+                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold font-mono">
+                      ({checkingOutSession.elapsedFormatted} • {checkingOutSession.billedHours}{' '}
+                      {checkingOutSession.billedHours === 1 ? 'Hour' : 'Hours'})
+                    </span>
+                  </div>
+                  <span className="font-mono text-xs font-bold text-slate-500">
+                    ~ {formatUSD(checkingOutSession.timeCostUsd)}
+                  </span>
+                </div>
+
+                {/* Editable Gaming Cost Input & Quick Presets */}
+                <div className="bg-white dark:bg-[#0E0F12] border border-slate-300 dark:border-[#2C303B] rounded-xl p-2.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                      <span>{language === 'ar' ? 'سعر وقت اللعب (ل.ل) - قابل للتعديل:' : 'Gaming Time Price (LBP) - Editable:'}</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {language === 'ar' ? 'يمكنك تعديل السعر لأي مبلغ' : 'Type any custom amount'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={customGamingCostLbp}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/[^0-9]/g, '');
+                          handleCustomGamingCostChange(digits ? Number(digits).toLocaleString('en-US') : '');
+                        }}
+                        placeholder="0"
+                        className="w-full px-3 py-1.5 bg-slate-50 dark:bg-[#16181D] border border-[#C83818]/40 focus:border-[#C83818] rounded-lg text-sm font-black font-mono focus:outline-none focus:ring-1 focus:ring-[#C83818]"
+                      />
+                      <span className="absolute right-3 top-2 text-[10px] font-bold text-slate-400 font-mono">
+                        L.L
+                      </span>
+                    </div>
+
+                    {/* Quick 1-click Preset Buttons */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const oneHrLbp = (checkingOutSession.session.players_count || 1) * ratePerPlayerHourLbp;
+                          handleCustomGamingCostChange(oneHrLbp.toLocaleString('en-US'));
+                        }}
+                        className="px-2.5 py-1.5 text-[11px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-[#C83818]/15 hover:text-[#C83818] dark:hover:bg-[#C83818]/25 text-slate-700 dark:text-slate-200 rounded-lg transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
+                        title="Set to 1 Hour"
+                      >
+                        {language === 'ar' ? 'ساعة (1h)' : '1 Hr'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const twoHrLbp = (checkingOutSession.session.players_count || 1) * ratePerPlayerHourLbp * 2;
+                          handleCustomGamingCostChange(twoHrLbp.toLocaleString('en-US'));
+                        }}
+                        className="px-2.5 py-1.5 text-[11px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-[#C83818]/15 hover:text-[#C83818] dark:hover:bg-[#C83818]/25 text-slate-700 dark:text-slate-200 rounded-lg transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
+                        title="Set to 2 Hours"
+                      >
+                        {language === 'ar' ? 'ساعتان (2h)' : '2 Hrs'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleCustomGamingCostChange(checkingOutSession.defaultTimeCostLbp.toLocaleString('en-US'));
+                        }}
+                        className="px-2 py-1.5 text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 rounded-lg transition-colors border border-amber-500/30 cursor-pointer"
+                        title="Reset to Calculated"
+                      >
+                        {language === 'ar' ? 'إعادة' : 'Reset'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* Snacks / Drinks if any */}
               {checkingOutSession.itemsCostUsd > 0 && (
-                <div className="flex justify-between text-slate-600 dark:text-slate-400">
-                  <span>Drinks & Snacks:</span>
+                <div className="flex justify-between text-slate-600 dark:text-slate-400 pt-1 border-t border-slate-200 dark:border-[#282C35]">
+                  <span>{language === 'ar' ? 'المشروبات والسناكس:' : 'Drinks & Snacks:'}</span>
                   <span className="font-mono font-bold">
                     {formatUSD(checkingOutSession.itemsCostUsd)} ({formatLBP(checkingOutSession.itemsCostLbp)})
                   </span>
                 </div>
               )}
+
+              {/* Grand Total Due */}
               <div className="pt-2 border-t border-slate-200 dark:border-[#282C35] flex justify-between items-baseline font-black">
-                <span className="text-sm">Total Due:</span>
+                <span className="text-sm">{language === 'ar' ? 'المجموع المستحق:' : 'Total Due:'}</span>
                 <div className="text-right">
                   <span className="text-xl text-[#DF7E63] font-mono block">
                     {formatUSD(checkingOutSession.grandTotalUsd)}
@@ -1058,23 +1224,68 @@ export const PlaystationPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Session Amount Summary */}
-            <div className="p-3.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-2xl flex items-center justify-between text-xs">
-              <div>
-                <span className="font-bold text-blue-900 dark:text-blue-300 block">
-                  {language === 'ar' ? 'المبلغ المحول للحساب:' : 'Amount to Transfer:'}
-                </span>
-                <span className="text-[11px] text-slate-500">
-                  {language === 'ar' ? 'وقت اللعب + جميع المشروبات والطلبات' : 'Gaming fee + drinks & snacks'}
-                </span>
+            {/* Session Amount Summary with Editable Gaming Fee */}
+            <div className="p-3.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-2xl space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-blue-900 dark:text-blue-300 block">
+                    {language === 'ar' ? 'المبلغ المحول للحساب:' : 'Amount to Transfer:'}
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-mono">
+                    ⚡ {sendingToTableSession.elapsedFormatted} • {sendingToTableSession.billedHours}{' '}
+                    {sendingToTableSession.billedHours === 1 ? 'Hour' : 'Hours'}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-black text-blue-600 dark:text-blue-400 font-mono block">
+                    {formatUSD(sendingToTableSession.grandTotalUsd)}
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-500 font-mono block">
+                    ({formatLBP(sendingToTableSession.grandTotalLbp)})
+                  </span>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="text-base font-black text-blue-600 dark:text-blue-400 font-mono block">
-                  {formatUSD(sendingToTableSession.grandTotalUsd)}
-                </span>
-                <span className="text-[11px] font-bold text-slate-500 font-mono block">
-                  ({formatLBP(sendingToTableSession.grandTotalLbp)})
-                </span>
+
+              {/* Editable Gaming Price in Send to Table */}
+              <div className="pt-2 border-t border-blue-200/60 dark:border-blue-900/40 flex items-center gap-2">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold text-blue-950 dark:text-blue-300 mb-0.5">
+                    {language === 'ar' ? 'سعر وقت اللعب (ل.ل):' : 'Gaming Price (LBP):'}
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={sendToTableCustomGamingLbp}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/[^0-9]/g, '');
+                      handleSendToTableCustomGamingChange(digits ? Number(digits).toLocaleString('en-US') : '');
+                    }}
+                    placeholder="0"
+                    className="w-full px-2.5 py-1 bg-white dark:bg-[#0E0F12] border border-blue-300 dark:border-blue-800 rounded-lg text-xs font-bold font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex items-center gap-1 pt-3.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const oneHrLbp = (sendingToTableSession.session.players_count || 1) * ratePerPlayerHourLbp;
+                      handleSendToTableCustomGamingChange(oneHrLbp.toLocaleString('en-US'));
+                    }}
+                    className="px-2 py-1 text-[10px] font-bold bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-950 text-blue-800 dark:text-blue-300 rounded border border-blue-300 dark:border-blue-700 cursor-pointer"
+                  >
+                    {language === 'ar' ? 'ساعة (1h)' : '1 Hr'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const twoHrLbp = (sendingToTableSession.session.players_count || 1) * ratePerPlayerHourLbp * 2;
+                      handleSendToTableCustomGamingChange(twoHrLbp.toLocaleString('en-US'));
+                    }}
+                    className="px-2 py-1 text-[10px] font-bold bg-white dark:bg-slate-800 hover:bg-blue-100 dark:hover:bg-blue-950 text-blue-800 dark:text-blue-300 rounded border border-blue-300 dark:border-blue-700 cursor-pointer"
+                  >
+                    {language === 'ar' ? 'ساعتان (2h)' : '2 Hrs'}
+                  </button>
+                </div>
               </div>
             </div>
 

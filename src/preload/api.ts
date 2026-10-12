@@ -695,6 +695,8 @@ export const api = {
     paidLbp: number;
     changeUsd: number;
     changeLbp: number;
+    customGamingLbp?: number;
+    customGamingUsd?: number;
   }): Promise<ApiResponse<any>> =>
     ipcRenderer.invoke(IPC_CHANNELS.PLAYSTATION_CHECKOUT, payload),
 
@@ -783,6 +785,8 @@ export const api = {
   sendPlaystationSessionToTable: (payload: {
     sessionId: string;
     tableId: string;
+    customGamingLbp?: number;
+    customGamingUsd?: number;
   }): Promise<ApiResponse<any>> =>
     ipcRenderer.invoke(IPC_CHANNELS.PLAYSTATION_SEND_TO_TABLE, payload),
 

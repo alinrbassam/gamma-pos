@@ -90,7 +90,15 @@ export function registerCafeteriaAndPlaystationIpcHandlers(db: Database.Database
     IPC_CHANNELS.PLAYSTATION_CHECKOUT,
     async (
       _,
-      payload: { sessionId: string; paidUsd: number; paidLbp: number; changeUsd: number; changeLbp: number },
+      payload: {
+        sessionId: string;
+        paidUsd: number;
+        paidLbp: number;
+        changeUsd: number;
+        changeLbp: number;
+        customGamingLbp?: number;
+        customGamingUsd?: number;
+      },
     ): Promise<ApiResponse> => {
       try {
         const data = playstationService.checkoutSession(payload);
@@ -103,9 +111,22 @@ export function registerCafeteriaAndPlaystationIpcHandlers(db: Database.Database
 
   ipcMain.handle(
     IPC_CHANNELS.PLAYSTATION_SEND_TO_TABLE,
-    async (_, payload: { sessionId: string; tableId: string }): Promise<ApiResponse> => {
+    async (
+      _,
+      payload: {
+        sessionId: string;
+        tableId: string;
+        customGamingLbp?: number;
+        customGamingUsd?: number;
+      },
+    ): Promise<ApiResponse> => {
       try {
-        const data = playstationService.sendSessionToTable(payload.sessionId, payload.tableId);
+        const data = playstationService.sendSessionToTable(
+          payload.sessionId,
+          payload.tableId,
+          payload.customGamingLbp,
+          payload.customGamingUsd,
+        );
         return { success: true, data };
       } catch (err: any) {
         return { success: false, error: { code: 'PS_SEND_TO_TABLE_ERROR', message: err.message } };
