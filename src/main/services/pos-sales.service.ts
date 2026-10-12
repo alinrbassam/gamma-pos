@@ -168,11 +168,34 @@ export class POSSalesService {
 
         if (!product) {
           const defaultCat = this.db.prepare('SELECT id FROM categories LIMIT 1').get() as { id: string } | undefined;
-          const catId = defaultCat ? defaultCat.id : 'fresh';
+          let catId = defaultCat ? defaultCat.id : 'fresh';
+          let nameEn = (item as any).productName || item.productId;
+          let nameAr = (item as any).productName || nameEn;
+
+          if (item.productId.startsWith('hookah-')) {
+            catId = 'cat-shisha';
+            const isRefill = item.productId.endsWith('-refill');
+            const flavorId = item.productId.replace('hookah-', '').replace('-full', '').replace('-refill', '');
+            const flv = this.db.prepare('SELECT * FROM hookah_flavors WHERE id = ?').get(flavorId) as any;
+            if (flv) {
+              nameEn = isRefill ? `💨 Refill: ${flv.name_en}` : `💨 Hookah: ${flv.name_en}`;
+              nameAr = isRefill ? `💨 راس: ${flv.name_ar}` : `💨 أركيلة: ${flv.name_ar}`;
+            } else {
+              const clean = flavorId.replace(/^hk-/, '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+              nameEn = isRefill ? `💨 Refill: ${clean || 'Hookah'}` : `💨 Hookah: ${clean || 'Hookah'}`;
+              nameAr = isRefill ? `💨 راس: ${clean || 'شيشة'}` : `💨 أركيلة: ${clean || 'شيشة'}`;
+            }
+          }
+
           this.db.prepare(`
-            INSERT OR IGNORE INTO products (id, sku, name_en, name_ar, category_id, base_unit_id, selling_price, is_active)
+            INSERT INTO products (id, sku, name_en, name_ar, category_id, base_unit_id, selling_price, is_active)
             VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-          `).run(item.productId, `SKU-${item.productId}`, item.productId, item.productId, catId, unitId, item.unitPrice);
+            ON CONFLICT(id) DO UPDATE SET
+              name_en = excluded.name_en,
+              name_ar = excluded.name_ar,
+              category_id = excluded.category_id,
+              selling_price = excluded.selling_price
+          `).run(item.productId, `SKU-${item.productId}`, nameEn, nameAr, catId, unitId, item.unitPrice);
           product = this.productRepo.findById(item.productId);
         }
 

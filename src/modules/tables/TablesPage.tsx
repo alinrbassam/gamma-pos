@@ -71,6 +71,25 @@ interface TableWithTab {
   activeTab: DineInTab | null;
 }
 
+const formatTabItemTitle = (name: string) => {
+  if (!name) return '';
+  if (name.startsWith('hookah-')) {
+    const isRefill = name.endsWith('-refill');
+    const slug = name
+      .replace(/^hookah-/, '')
+      .replace(/-full$/, '')
+      .replace(/-refill$/, '')
+      .replace(/^hk-/, '')
+      .replace(/-/g, ' ');
+    const titleCased = slug
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    return isRefill ? `💨 Refill: ${titleCased || 'Hookah'}` : `💨 Hookah: ${titleCased || 'Hookah'}`;
+  }
+  return name;
+};
+
 export const TablesPage: React.FC = () => {
   const { language } = useLanguageStore();
   const { activeRoleMode, setManagerUnlockModalOpen } = useAuthStore();
@@ -874,7 +893,7 @@ export const TablesPage: React.FC = () => {
                             >
                               <div className="flex-1 min-w-0">
                                 <span className="font-bold text-[11px] truncate block text-slate-800 dark:text-slate-200">
-                                  {it.product_name}
+                                  {formatTabItemTitle(it.product_name)}
                                 </span>
                                 <span className="text-[10px] text-slate-400 font-mono">
                                   {formatUSD(it.unit_price_usd)} ea
@@ -1696,7 +1715,7 @@ export const TablesPage: React.FC = () => {
                   className="flex items-center justify-between py-1.5 px-2.5 bg-slate-50 dark:bg-[#181A20] rounded-lg"
                 >
                   <span className="text-slate-700 dark:text-slate-300 font-semibold truncate">
-                    {it.quantity}x {it.product_name}
+                    {it.quantity}x {formatTabItemTitle(it.product_name)}
                   </span>
                   <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
                     {formatUSD(it.line_total_usd)}
@@ -2125,7 +2144,7 @@ export const TablesPage: React.FC = () => {
                       className="flex justify-between items-center text-xs py-1 px-2 rounded-lg bg-slate-50 dark:bg-[#1A1C22]"
                     >
                       <span className="font-medium text-slate-700 dark:text-slate-300 truncate">
-                        {it.quantity}x {it.product_name}
+                        {it.quantity}x {formatTabItemTitle(it.product_name)}
                       </span>
                       <span className="font-mono font-bold text-slate-900 dark:text-slate-100 shrink-0 ml-2">
                         ${it.line_total_usd.toFixed(2)}

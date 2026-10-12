@@ -33,6 +33,9 @@ export class HookahService {
         INSERT OR IGNORE INTO categories (id, name_en, name_ar, icon, display_order)
         VALUES ('cat-shisha', 'Shisha / Hookah', 'أراكيل وشيشة', '💨', 4)
       `).run();
+
+      // Repair and synchronize all hookah products in catalog
+      this.repairHookahProducts();
     } catch {
       // ignore
     }
@@ -124,6 +127,43 @@ export class HookahService {
     return { success: true };
   }
 
+  public repairHookahProducts(): void {
+    try {
+      const flavors = this.db.prepare('SELECT * FROM hookah_flavors').all() as HookahFlavorEntity[];
+      for (const flv of flavors) {
+        this.ensureProductRecords(flv.id, flv.name_en, flv.name_ar, flv.price_usd, flv.refill_price_usd);
+      }
+
+      // Also clean up any lingering raw product records whose name_en starts with 'hookah-'
+      const rawProds = this.db
+        .prepare(`SELECT id, name_en, name_ar FROM products WHERE id LIKE 'hookah-%' OR name_en LIKE 'hookah-%'`)
+        .all() as Array<{ id: string; name_en: string; name_ar: string }>;
+
+      for (const p of rawProds) {
+        const isRefill = p.id.endsWith('-refill');
+        const flavorId = p.id.replace('hookah-', '').replace('-full', '').replace('-refill', '');
+        const flv = this.db.prepare('SELECT * FROM hookah_flavors WHERE id = ?').get(flavorId) as HookahFlavorEntity | undefined;
+
+        if (flv) {
+          const en = isRefill ? `💨 Refill: ${flv.name_en}` : `💨 Hookah: ${flv.name_en}`;
+          const ar = isRefill ? `💨 راس: ${flv.name_ar}` : `💨 أركيلة: ${flv.name_ar}`;
+          this.db.prepare('UPDATE products SET name_en = ?, name_ar = ?, category_id = ? WHERE id = ?').run(en, ar, 'cat-shisha', p.id);
+        } else {
+          // Pretty format slug fallback: e.g. "hk-two-apples" -> "Two Apples"
+          const cleanName = flavorId
+            .replace(/^hk-/, '')
+            .replace(/-/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+          const en = isRefill ? `💨 Refill: ${cleanName || 'Hookah'}` : `💨 Hookah: ${cleanName || 'Hookah'}`;
+          const ar = isRefill ? `💨 راس: ${cleanName || 'شيشة'}` : `💨 أركيلة: ${cleanName || 'شيشة'}`;
+          this.db.prepare('UPDATE products SET name_en = ?, name_ar = ?, category_id = ? WHERE id = ?').run(en, ar, 'cat-shisha', p.id);
+        }
+      }
+    } catch {
+      // non-fatal
+    }
+  }
+
   private ensureProductRecords(
     flavorId: string,
     nameEn: string,
@@ -139,10 +179,17 @@ export class HookahService {
       const fullProdId = `hookah-${flavorId}-full`;
       const fullSku = `HK-${flavorId.slice(-6).toUpperCase()}-F`;
       this.db.prepare(`
-        INSERT OR IGNORE INTO products (
+        INSERT INTO products (
           id, sku, primary_barcode, name_en, name_ar, product_type, selling_price, purchase_cost,
           category_id, base_unit_id, is_active
         ) VALUES (?, ?, ?, ?, ?, 'Service', ?, 0, 'cat-shisha', ?, 1)
+        ON CONFLICT(id) DO UPDATE SET
+          name_en = excluded.name_en,
+          name_ar = excluded.name_ar,
+          selling_price = excluded.selling_price,
+          category_id = 'cat-shisha',
+          product_type = 'Service',
+          is_active = 1
       `).run(
         fullProdId,
         fullSku,
@@ -157,10 +204,17 @@ export class HookahService {
       const refillProdId = `hookah-${flavorId}-refill`;
       const refillSku = `HK-${flavorId.slice(-6).toUpperCase()}-R`;
       this.db.prepare(`
-        INSERT OR IGNORE INTO products (
+        INSERT INTO products (
           id, sku, primary_barcode, name_en, name_ar, product_type, selling_price, purchase_cost,
           category_id, base_unit_id, is_active
         ) VALUES (?, ?, ?, ?, ?, 'Service', ?, 0, 'cat-shisha', ?, 1)
+        ON CONFLICT(id) DO UPDATE SET
+          name_en = excluded.name_en,
+          name_ar = excluded.name_ar,
+          selling_price = excluded.selling_price,
+          category_id = 'cat-shisha',
+          product_type = 'Service',
+          is_active = 1
       `).run(
         refillProdId,
         refillSku,

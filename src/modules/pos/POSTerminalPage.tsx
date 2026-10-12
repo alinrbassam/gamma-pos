@@ -28,6 +28,44 @@ import {
   Bike,
 } from 'lucide-react';
 
+const getFormattedProductName = (
+  p: { id?: string; name_en?: string; name_ar?: string },
+  lang: string,
+) => {
+  let nameEn = p.name_en || '';
+  let nameAr = p.name_ar || nameEn;
+
+  // Clean up raw hookah slug like "hookah-hk-two-apples-refill"
+  if (nameEn.startsWith('hookah-') || (p.id && p.id.startsWith('hookah-'))) {
+    const raw = nameEn.startsWith('hookah-') ? nameEn : (p.id || '');
+    const isRefill = raw.endsWith('-refill');
+    const slug = raw
+      .replace(/^hookah-/, '')
+      .replace(/-full$/, '')
+      .replace(/-refill$/, '')
+      .replace(/^hk-/, '')
+      .replace(/-/g, ' ');
+    const titleCased = slug
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+
+    const fullEn = `💨 Hookah: ${titleCased || 'Shisha'}`;
+    const refillEn = `💨 Refill: ${titleCased || 'Shisha'}`;
+    const fullAr = `💨 أركيلة: ${titleCased || 'شيشة'}`;
+    const refillAr = `💨 راس: ${titleCased || 'شيشة'}`;
+
+    if (nameEn.startsWith('hookah-') || !p.name_en) {
+      nameEn = isRefill ? refillEn : fullEn;
+    }
+    if (nameAr.startsWith('hookah-') || !p.name_ar) {
+      nameAr = isRefill ? refillAr : fullAr;
+    }
+  }
+
+  return lang === 'ar' ? (nameAr || nameEn) : (nameEn || nameAr);
+};
+
 export const POSTerminalPage: React.FC = () => {
   const {
     cart,
@@ -659,7 +697,7 @@ export const POSTerminalPage: React.FC = () => {
                       </span>
                     </div>
                     <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#C83818] dark:group-hover:text-[#DF7E63] leading-snug">
-                      {language === 'ar' ? p.name_ar || p.name_en : p.name_en}
+                      {getFormattedProductName(p, language)}
                     </h4>
                   </div>
 
@@ -679,9 +717,9 @@ export const POSTerminalPage: React.FC = () => {
       </div>
 
       {/* RIGHT PANEL: Shopping Cart & Direct Checkout */}
-      <div className="w-full md:w-[380px] lg:w-[420px] xl:w-[460px] bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] rounded-3xl flex flex-col min-w-0 shadow-xs overflow-hidden">
+      <div className="w-full md:w-[420px] lg:w-[480px] xl:w-[520px] 2xl:w-[560px] bg-white dark:bg-[#141518] border border-slate-200 dark:border-[#21242B] rounded-3xl flex flex-col min-w-0 shadow-xs overflow-hidden">
         {/* Cart Header */}
-        <div className="p-3.5 border-b border-slate-200 dark:border-[#21242B] flex justify-between items-center bg-slate-50/80 dark:bg-[#1A1C21]/60">
+        <div className="px-3.5 py-2.5 border-b border-slate-200 dark:border-[#21242B] flex justify-between items-center bg-slate-50/80 dark:bg-[#1A1C21]/60">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <div className="p-1.5 rounded-lg bg-[#C83818]/10 dark:bg-[#C83818]/20 text-[#C83818] dark:text-[#DF7E63]">
               <ShoppingCart className="h-4 w-4" />
@@ -711,7 +749,7 @@ export const POSTerminalPage: React.FC = () => {
         </div>
 
         {/* Cart Line Items (Click to select for Touch Numpad) */}
-        <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-[140px]">
+        <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-[140px]">
           {cart.map((item, idx) => {
             const lineSubUsd = item.quantity * item.unitPrice;
             const lineSubLbp = Math.round(lineSubUsd * usdToLbpRate);
@@ -724,7 +762,7 @@ export const POSTerminalPage: React.FC = () => {
                   setSelectedCartIdx(idx);
                   setNumpadResetTrigger((prev) => prev + 1);
                 }}
-                className={`p-2.5 rounded-2xl space-y-1.5 text-xs transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl space-y-1 text-xs transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-amber-500/10 dark:bg-amber-500/15 border-2 border-amber-500 shadow-xs'
                     : 'bg-slate-50/70 dark:bg-[#1A1C21]/60 hover:bg-slate-50 dark:hover:bg-[#1A1C21] border border-slate-200 dark:border-[#282C35]'
@@ -736,7 +774,7 @@ export const POSTerminalPage: React.FC = () => {
                       <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 animate-pulse" />
                     )}
                     <span className="truncate text-slate-900 dark:text-slate-100 font-bold">
-                      {language === 'ar' ? item.product.name_ar || item.product.name_en : item.product.name_en}
+                      {getFormattedProductName(item.product, language)}
                     </span>
                   </div>
                   <div className="text-right shrink-0">
@@ -751,7 +789,7 @@ export const POSTerminalPage: React.FC = () => {
 
                 {/* Quantity & Unit Price Controls */}
                 <div className="flex items-center justify-between gap-1 pt-0.5">
-                  <div className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-xl p-0.5 border border-slate-200 dark:border-[#282C35] shadow-xs">
+                  <div className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-lg p-0.5 border border-slate-200 dark:border-[#282C35] shadow-xs">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -761,7 +799,7 @@ export const POSTerminalPage: React.FC = () => {
                         setSelectedCartIdx(idx);
                         setNumpadResetTrigger((prev) => prev + 1);
                       }}
-                      className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg transition-colors"
+                      className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-md transition-colors"
                       title="-1"
                     >
                       <Minus className="h-3 w-3" />
@@ -801,7 +839,7 @@ export const POSTerminalPage: React.FC = () => {
                         setSelectedCartIdx(idx);
                         setNumpadResetTrigger((prev) => prev + 1);
                       }}
-                      className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg transition-colors"
+                      className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-md transition-colors"
                       title="+1"
                     >
                       <Plus className="h-3 w-3" />
@@ -814,7 +852,7 @@ export const POSTerminalPage: React.FC = () => {
                       {formatLBP(Math.round(item.unitPrice * usdToLbpRate))}
                     </span>
                     <div
-                      className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-xl px-1.5 py-0.5 border border-slate-200 dark:border-[#282C35] hover:border-emerald-500 transition-colors shadow-xs"
+                      className="flex items-center space-x-0.5 rtl:space-x-reverse bg-white dark:bg-[#0E0F12] rounded-lg px-1.5 py-0.5 border border-slate-200 dark:border-[#282C35] hover:border-emerald-500 transition-colors shadow-xs"
                       title={language === 'ar' ? 'سعر الوحدة بالدولار' : 'Unit price in USD ($)'}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -837,7 +875,7 @@ export const POSTerminalPage: React.FC = () => {
                       e.stopPropagation();
                       removeFromCart(idx);
                     }}
-                    className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
+                    className="text-rose-500 hover:text-rose-700 p-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
