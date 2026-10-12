@@ -305,22 +305,30 @@ export const POSTerminalPage: React.FC = () => {
 
   const calculateTotals = () => {
     let subtotal = 0;
+    let subtotalLbp = 0;
     let taxTotal = 0;
 
     cart.forEach((item) => {
-      const lineSub = Math.round(item.quantity * item.unitPrice * 100) / 100;
+      const rawLineSubUsd = item.quantity * item.unitPrice;
+      const lineSubLbp = Math.round(rawLineSubUsd * usdToLbpRate);
+      const lineSub = Math.round(rawLineSubUsd * 100) / 100;
       // Per user instruction: discount is ONLY on total receipt, not on item
       const lineDisc = 0;
       const taxable = Math.max(0, lineSub - lineDisc);
       const tax = Math.round(taxable * (item.taxRate / 100) * 100) / 100;
 
       subtotal += lineSub;
+      subtotalLbp += lineSubLbp;
       taxTotal += tax;
     });
 
+    const discountLbp = Math.round(orderDiscount * usdToLbpRate);
+    const taxTotalLbp = Math.round(taxTotal * usdToLbpRate);
+
+    // Exact sum of LBP line subtotals prevents 2-decimal truncation discrepancy
+    const grandTotalLbp = Math.max(0, subtotalLbp - discountLbp + taxTotalLbp);
     const grandTotal = Math.max(0, Math.round((subtotal - orderDiscount + taxTotal) * 100) / 100);
-    const grandTotalLbp = Math.round(grandTotal * usdToLbpRate);
-    return { subtotal, taxTotal, grandTotal, grandTotalLbp };
+    return { subtotal, subtotalLbp, taxTotal, grandTotal, grandTotalLbp };
   };
 
   const totals = calculateTotals();
@@ -1004,6 +1012,7 @@ export const POSTerminalPage: React.FC = () => {
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         grandTotal={totals.grandTotal}
+        grandTotalLbp={totals.grandTotalLbp}
         onConfirm={handlePaymentConfirm}
       />
 

@@ -7,6 +7,16 @@ import { Badge } from '@components/ui/Badge';
 import { RefreshCw, CheckCircle2, Download, Sparkles, ShieldCheck } from 'lucide-react';
 
 const VERSION_CHANGELOG: Record<string, { en: string[]; ar: string[] }> = {
+  '1.0.12': {
+    en: [
+      'Exact LBP Precision: Fixed rounding discrepancy so typed LBP amounts (e.g. 100,000 L.L) match Grand Total exactly.',
+      'Synchronized Payment Modal: Exact integer LBP due amount and payment validation.',
+    ],
+    ar: [
+      'دقة احتساب الليرة اللبنانية: إصلاح تقريب المجموع ليطابق سعر الصنف بالليرة بدقة تامة (مثل 100,000 ل.ل دون أي نقص).',
+      'مزامنة شاشة الدفع: تطابق دقيق للمبلغ المطلوب والدفع بالليرة اللبنانية.',
+    ],
+  },
   '1.0.11': {
     en: [
       'LBP Cart Price Editing: Edit cart item prices directly in Lebanese Pounds (e.g. 135,000 L.L) with automatic USD calculation ($1.50).',

@@ -19,6 +19,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   grandTotal: number; // Base in USD
+  grandTotalLbp?: number; // Exact integer LBP
   onConfirm: (
     payments: {
       paymentMethod: 'Cash' | 'Card' | 'Digital Wallet' | 'Store Credit' | 'Borrow' | 'Credit' | string;
@@ -42,7 +43,13 @@ interface Props {
   ) => void;
 }
 
-export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, onConfirm }) => {
+export const POSPaymentModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  grandTotal,
+  grandTotalLbp: propGrandTotalLbp,
+  onConfirm,
+}) => {
   const { language } = useLanguageStore();
   const { usdToLbpRate } = useExchangeRateStore();
   const [activeTab, setActiveTab] = useState<'cash' | 'borrow'>('cash');
@@ -74,7 +81,7 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
   const [notes, setNotes] = useState<string>('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const grandTotalLbp = Math.round(grandTotal * usdToLbpRate);
+  const grandTotalLbp = propGrandTotalLbp !== undefined ? propGrandTotalLbp : Math.round(grandTotal * usdToLbpRate);
 
   useEffect(() => {
     if (isOpen) {
@@ -111,16 +118,17 @@ export const POSPaymentModal: React.FC<Props> = ({ isOpen, onClose, grandTotal, 
   const numPaidUsd = parseFloat(paidUsd) || 0;
   const numPaidLbp = parseCommas(paidLbp);
 
-  // Total paid in USD equivalent
+  // Total paid in USD and LBP equivalents
   const totalPaidUsdEquivalent = numPaidUsd + (numPaidLbp / usdToLbpRate);
+  const totalPaidLbpEquivalent = numPaidLbp + Math.round(numPaidUsd * usdToLbpRate);
 
-  const remainingUsd = Math.max(0, grandTotal - totalPaidUsdEquivalent);
-  const remainingLbp = Math.round(remainingUsd * usdToLbpRate);
+  const remainingLbp = Math.max(0, grandTotalLbp - totalPaidLbpEquivalent);
+  const remainingUsd = Math.max(0, remainingLbp > 0 ? remainingLbp / usdToLbpRate : 0);
 
-  const changeUsd = Math.max(0, totalPaidUsdEquivalent - grandTotal);
-  const changeLbp = Math.round(changeUsd * usdToLbpRate);
+  const changeLbp = Math.max(0, totalPaidLbpEquivalent - grandTotalLbp);
+  const changeUsd = Math.max(0, changeLbp > 0 ? changeLbp / usdToLbpRate : 0);
 
-  const isFullyPaid = totalPaidUsdEquivalent >= grandTotal - 0.009;
+  const isFullyPaid = totalPaidLbpEquivalent >= grandTotalLbp - 100 || totalPaidUsdEquivalent >= grandTotal - 0.009;
 
   // Borrow down payment calculations
   const parsedDownPaymentUsd = parseFloat(downPaymentUsd) || 0;

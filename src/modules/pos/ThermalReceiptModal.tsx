@@ -49,7 +49,10 @@ export const ThermalReceiptModal: React.FC<Props> = ({
 
   const rate = sale.exchange_rate || 89500;
   const grandTotalUsd = sale.grand_total || 0;
-  const grandTotalLbp = Math.round(grandTotalUsd * rate);
+  const itemsLbp = sale.items && sale.items.length > 0
+    ? sale.items.reduce((acc, it) => acc + Math.round((it.quantity || 1) * (it.unit_price || 0) * rate), 0)
+    : 0;
+  const grandTotalLbp = itemsLbp > 0 ? itemsLbp : Math.round(grandTotalUsd * rate);
 
   const getOrderTypeLabel = () => {
     switch (sale.order_type) {
