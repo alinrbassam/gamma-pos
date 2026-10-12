@@ -69,12 +69,14 @@ export const POSTerminalPage: React.FC = () => {
   const [showHoldSaveModal, setShowHoldSaveModal] = useState(false);
   const [lastCompletedSale, setLastCompletedSale] = useState<SalesOrderEntity | null>(null);
   const [selectedCartIdx, setSelectedCartIdx] = useState<number | null>(null);
+  const [numpadResetTrigger, setNumpadResetTrigger] = useState<number>(0);
 
   // Keep selected cart item in sync with cart changes
   useEffect(() => {
     if (cart.length > 0) {
       if (selectedCartIdx === null || selectedCartIdx >= cart.length) {
         setSelectedCartIdx(cart.length - 1);
+        setNumpadResetTrigger((prev) => prev + 1);
       }
     } else {
       setSelectedCartIdx(null);
@@ -91,6 +93,7 @@ export const POSTerminalPage: React.FC = () => {
     } else {
       setSelectedCartIdx(cart.length);
     }
+    setNumpadResetTrigger((prev) => prev + 1);
   };
 
   useEffect(() => {
@@ -717,7 +720,10 @@ export const POSTerminalPage: React.FC = () => {
             return (
               <div
                 key={idx}
-                onClick={() => setSelectedCartIdx(idx)}
+                onClick={() => {
+                  setSelectedCartIdx(idx);
+                  setNumpadResetTrigger((prev) => prev + 1);
+                }}
                 className={`p-2.5 rounded-2xl space-y-1.5 text-xs transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-amber-500/10 dark:bg-amber-500/15 border-2 border-amber-500 shadow-xs'
@@ -753,6 +759,7 @@ export const POSTerminalPage: React.FC = () => {
                         const min = isKg ? 0.05 : 1;
                         updateCartItem(idx, 'quantity', Math.max(min, Math.round((item.quantity - 1) * 100) / 100));
                         setSelectedCartIdx(idx);
+                        setNumpadResetTrigger((prev) => prev + 1);
                       }}
                       className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg transition-colors"
                       title="-1"
@@ -765,7 +772,17 @@ export const POSTerminalPage: React.FC = () => {
                         step={item.product.base_unit_id === 'Kg' ? 'any' : '1'}
                         min={item.product.base_unit_id === 'Kg' ? '0.05' : '1'}
                         value={item.quantity}
-                        onClick={(e) => e.stopPropagation()}
+                        onFocus={(e) => {
+                          setSelectedCartIdx(idx);
+                          setNumpadResetTrigger((prev) => prev + 1);
+                          e.currentTarget.select();
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCartIdx(idx);
+                          setNumpadResetTrigger((prev) => prev + 1);
+                          e.currentTarget.select();
+                        }}
                         onChange={(e) => {
                           const val = parseFloat(e.target.value);
                           updateCartItem(idx, 'quantity', isNaN(val) ? 0 : val);
@@ -782,6 +799,7 @@ export const POSTerminalPage: React.FC = () => {
                         e.stopPropagation();
                         updateCartItem(idx, 'quantity', Math.round((item.quantity + 1) * 100) / 100);
                         setSelectedCartIdx(idx);
+                        setNumpadResetTrigger((prev) => prev + 1);
                       }}
                       className="p-1 hover:text-[#C83818] text-slate-500 hover:bg-slate-100 dark:hover:bg-[#1A1C21] rounded-lg transition-colors"
                       title="+1"
@@ -876,6 +894,7 @@ export const POSTerminalPage: React.FC = () => {
         <POSTouchNumpad
           selectedItem={selectedCartIdx !== null ? cart[selectedCartIdx] || null : null}
           selectedItemIndex={selectedCartIdx}
+          resetFreshInputTrigger={numpadResetTrigger}
           onUpdateQuantity={(newQty) => {
             if (selectedCartIdx !== null && cart[selectedCartIdx]) {
               updateCartItem(selectedCartIdx, 'quantity', newQty);

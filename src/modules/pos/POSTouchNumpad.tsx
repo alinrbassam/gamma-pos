@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguageStore } from '../../renderer/stores/useLanguageStore';
 import { formatUSD, formatLBP } from '../../renderer/utils/currency';
 import { CartItem } from '../../renderer/stores/usePOSStore';
@@ -16,6 +16,7 @@ import {
 interface Props {
   selectedItem: CartItem | null;
   selectedItemIndex: number | null;
+  resetFreshInputTrigger?: number;
   onUpdateQuantity: (qty: number) => void;
   onIncrement: () => void;
   onDecrement: () => void;
@@ -32,6 +33,7 @@ interface Props {
 export const POSTouchNumpad: React.FC<Props> = ({
   selectedItem,
   selectedItemIndex,
+  resetFreshInputTrigger = 0,
   onUpdateQuantity,
   onIncrement,
   onDecrement,
@@ -52,11 +54,20 @@ export const POSTouchNumpad: React.FC<Props> = ({
 
   // Qty typing buffer state
   const [isFreshInput, setIsFreshInput] = useState<boolean>(true);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Reset fresh input whenever selected item changes
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, []);
+
+  // Reset fresh input whenever selected item changes OR reset trigger fires
   useEffect(() => {
     setIsFreshInput(true);
-  }, [selectedItemIndex]);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+  }, [selectedItemIndex, resetFreshInputTrigger]);
 
   // Fast cash tender state
   const [tenderedUsd, setTenderedUsd] = useState<number | null>(null);
@@ -73,13 +84,17 @@ export const POSTouchNumpad: React.FC<Props> = ({
     if (!selectedItem) return;
     const currentQtyStr = String(selectedItem.quantity);
 
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
     if (isFreshInput) {
-      // First keypress replaces current quantity
+      // First keypress replaces current quantity!
       const newQty = digit === '.' ? 0.5 : parseFloat(digit) || 1;
       onUpdateQuantity(newQty);
       setIsFreshInput(false);
     } else {
-      // Subsequent keypress appends
+      // Subsequent keypress within typing window appends
       if (digit === '.') {
         if (!currentQtyStr.includes('.')) {
           onUpdateQuantity(parseFloat(`${currentQtyStr}.`) || selectedItem.quantity);
@@ -91,10 +106,16 @@ export const POSTouchNumpad: React.FC<Props> = ({
         }
       }
     }
+
+    // Set 2.5s timer: after 2.5s of no keypress, next digit will replace again
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsFreshInput(true);
+    }, 2500);
   };
 
   const handleBackspace = () => {
     if (!selectedItem) return;
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     const str = String(selectedItem.quantity);
     if (str.length <= 1 || isFreshInput) {
       onUpdateQuantity(1);
@@ -108,12 +129,14 @@ export const POSTouchNumpad: React.FC<Props> = ({
 
   const handleClear = () => {
     if (!selectedItem) return;
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     onUpdateQuantity(1);
     setIsFreshInput(true);
   };
 
   const handleMultiplier = (mult: number) => {
     if (!selectedItem) return;
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     onUpdateQuantity(mult);
     setIsFreshInput(true);
   };
@@ -238,12 +261,26 @@ export const POSTouchNumpad: React.FC<Props> = ({
                       : '(Tap a cart item to edit)'}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsFreshInput(true)}
+                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
+                    isFreshInput
+                      ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/60 ring-2 ring-amber-500/30'
+                      : 'bg-[#C83818]/10 dark:bg-[#C83818]/20 text-[#C83818] dark:text-[#DF7E63] border-[#C83818]/30'
+                  }`}
+                  title={isAr ? 'انقر للاستبدال برقم جديد' : 'Click to replace with new number'}
+                >
                   <span className="text-[10px] text-slate-400 font-semibold">{isAr ? 'الكمية:' : 'Qty:'}</span>
-                  <span className="px-2 py-0.5 rounded-lg bg-[#C83818]/10 dark:bg-[#C83818]/20 text-[#C83818] dark:text-[#DF7E63] font-mono font-black text-sm border border-[#C83818]/30">
+                  <span className="font-mono font-black text-sm">
                     {selectedItem ? selectedItem.quantity : 0}
                   </span>
-                </div>
+                  {isFreshInput && (
+                    <span className="text-[9px] bg-amber-500 text-white font-extrabold px-1 rounded uppercase tracking-tight">
+                      {isAr ? 'استبدال' : 'Replace'}
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* 5-Column Touch Numpad Grid */}
