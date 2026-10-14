@@ -18,14 +18,16 @@ export class ProductRepository extends BaseRepository<ProductEntity> {
   }
 
   public findByBarcode(barcode: string): (ProductEntity & { barcode_type?: string }) | null {
+    const clean = (barcode || '').trim();
+    if (!clean) return null;
     const stmt = this.db.prepare(`
       SELECT p.*, pb.barcode_type FROM products p
       LEFT JOIN product_barcodes pb ON p.id = pb.product_id
-      WHERE (LOWER(p.primary_barcode) = LOWER(?) OR LOWER(pb.barcode) = LOWER(?))
+      WHERE (LOWER(p.primary_barcode) = LOWER(?) OR LOWER(pb.barcode) = LOWER(?) OR LOWER(p.sku) = LOWER(?))
         AND (p.deleted_at IS NULL OR p.deleted_at = '')
       LIMIT 1
     `);
-    const row = stmt.get(barcode, barcode);
+    const row = stmt.get(clean, clean, clean);
     return (row as ProductEntity & { barcode_type?: string }) || null;
   }
 
@@ -170,7 +172,9 @@ export class ProductRepository extends BaseRepository<ProductEntity> {
     stmt.run(
       product.sku || existing.sku,
       product.product_code || existing.product_code || null,
-      product.primary_barcode || existing.primary_barcode || null,
+      product.primary_barcode !== undefined
+        ? (product.primary_barcode ? product.primary_barcode.trim() : null)
+        : (existing.primary_barcode || null),
       product.name_en || existing.name_en,
       product.name_ar || existing.name_ar,
       product.short_name || existing.short_name || null,

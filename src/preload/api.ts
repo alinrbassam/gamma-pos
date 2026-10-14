@@ -326,6 +326,8 @@ export const api = {
     ipcRenderer.invoke(IPC_CHANNELS.PRODUCTS_SEARCH, query, limit, offset),
   getProductById: (id: string): Promise<ApiResponse<ProductEntity>> =>
     ipcRenderer.invoke(IPC_CHANNELS.PRODUCTS_GET_BY_ID, id),
+  lookupBarcode: (barcode: string): Promise<ApiResponse<ProductEntity | null>> =>
+    ipcRenderer.invoke(IPC_CHANNELS.BARCODES_LOOKUP, barcode),
   createProduct: (payload: ProductInput, userId?: string): Promise<ApiResponse<ProductEntity>> =>
     ipcRenderer.invoke(IPC_CHANNELS.PRODUCTS_CREATE, payload, userId),
   updateProduct: (

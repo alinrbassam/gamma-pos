@@ -26,6 +26,7 @@ import {
   Coffee,
   ShoppingBag,
   Bike,
+  Barcode,
 } from 'lucide-react';
 
 const getFormattedProductName = (
@@ -70,6 +71,36 @@ const normalizeLbpAmount = (amountUsd: number, rate: number): number => {
   const rawLbp = amountUsd * rate;
   const roundedThousand = Math.round(rawLbp / 1000) * 1000;
   return Math.abs(rawLbp - roundedThousand) <= 450 && rawLbp >= 1000 ? roundedThousand : Math.round(rawLbp);
+};
+
+const playScanBeep = (type: 'success' | 'error' = 'success') => {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === 'success') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1400, ctx.currentTime);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.08);
+    } else {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.22);
+    }
+  } catch {
+    // Ignore audio context limitations
+  }
 };
 
 export const POSTerminalPage: React.FC = () => {
@@ -206,6 +237,89 @@ export const POSTerminalPage: React.FC = () => {
     }
   }, [productSearch, loadProducts]);
 
+  const [scanNotification, setScanNotification] = useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
+
+  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showScanNotification = useCallback((message: string, type: 'success' | 'error') => {
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
+    }
+    setScanNotification({ message, type });
+    scanTimeoutRef.current = setTimeout(() => {
+      setScanNotification(null);
+    }, 2800);
+  }, []);
+
+  const handleProcessBarcodeScan = useCallback(
+    async (rawCode: string) => {
+      const code = rawCode.trim();
+      if (!code) return;
+
+      // 1. Search in in-memory products first (instant)
+      let found = products.find(
+        (p) =>
+          (p.primary_barcode && p.primary_barcode.trim().toLowerCase() === code.toLowerCase()) ||
+          (p.sku && p.sku.trim().toLowerCase() === code.toLowerCase())
+      );
+
+      // 2. Query DB via lookupBarcode
+      if (!found && window.api?.lookupBarcode) {
+        try {
+          const res = await window.api.lookupBarcode(code);
+          if (res.success && res.data) {
+            found = res.data;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // 3. Fallback: search query
+      if (!found && window.api?.searchProducts) {
+        try {
+          const res = await window.api.searchProducts(code, 5, 0);
+          if (res.success && res.data && res.data.length > 0) {
+            const exact = res.data.find(
+              (p) =>
+                (p.primary_barcode && p.primary_barcode.trim().toLowerCase() === code.toLowerCase()) ||
+                (p.sku && p.sku.trim().toLowerCase() === code.toLowerCase())
+            );
+            found = exact || (res.data.length === 1 ? res.data[0] : undefined);
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (found) {
+        handleAddToCart(found, 1.0);
+        playScanBeep('success');
+        const name = getFormattedProductName(found, language);
+        const priceLbp = normalizeLbpAmount(found.selling_price || 0, usdToLbpRate);
+        showScanNotification(
+          language === 'ar'
+            ? `✅ تمت الإضافة: ${name} (${formatLBP(priceLbp)})`
+            : `✅ Added: ${name} (${formatLBP(priceLbp)})`,
+          'success'
+        );
+        setProductSearch('');
+      } else {
+        playScanBeep('error');
+        showScanNotification(
+          language === 'ar'
+            ? `⚠️ الباركود [${code}] غير مسجل في المخزون!`
+            : `⚠️ Barcode [${code}] not found in catalog!`,
+          'error'
+        );
+      }
+    },
+    [products, language, handleAddToCart, usdToLbpRate, showScanNotification]
+  );
+
   const handleHoldSale = useCallback(() => {
     if (cart.length === 0) {
       alert(language === 'ar' ? 'السلة فارغة! أضف أصنافاً أولاً للتعليق.' : 'Cart is empty! Add items first to hold.');
@@ -221,23 +335,87 @@ export const POSTerminalPage: React.FC = () => {
     }
   };
 
-  // Keyboard Shortcuts (F4 = Hold, F5 = Resume, F2 = Search)
+  // Keyboard Shortcuts (F4 = Hold, F5 = Resume, F2 = Search, + Auto Barcode Scanner Wedge)
   useEffect(() => {
+    let buffer = '';
+    let lastTime = 0;
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Do not intercept if modal is open
+      if (
+        showPaymentModal ||
+        showHoldSaveModal ||
+        showHoldModal ||
+        Boolean(lastCompletedSale)
+      ) {
+        return;
+      }
+
       if (e.key === 'F4') {
         e.preventDefault();
         handleHoldSale();
+        return;
       } else if (e.key === 'F5') {
         e.preventDefault();
         setShowHoldModal(true);
+        return;
       } else if (e.key === 'F2') {
         e.preventDefault();
         searchInputRef.current?.focus();
+        return;
+      }
+
+      const target = e.target as HTMLElement | null;
+      const isSearchInput = target === searchInputRef.current;
+      const isOtherInput =
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') &&
+        !isSearchInput;
+
+      const now = Date.now();
+      const diff = now - lastTime;
+      lastTime = now;
+
+      if (e.key === 'Enter') {
+        if (buffer.length >= 3) {
+          if (!isSearchInput) {
+            e.preventDefault();
+            const scannedCode = buffer;
+            buffer = '';
+            handleProcessBarcodeScan(scannedCode);
+            return;
+          }
+        }
+        buffer = '';
+        return;
+      }
+
+      // Only printable single characters without special modifier keys
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        // If typing in another input slowly, don't capture into scanner buffer
+        if (isOtherInput && diff > 55) {
+          buffer = '';
+          return;
+        }
+
+        if (diff > 85) {
+          buffer = e.key;
+        } else {
+          buffer += e.key;
+        }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleHoldSale]);
+  }, [
+    handleHoldSale,
+    showPaymentModal,
+    showHoldSaveModal,
+    showHoldModal,
+    lastCompletedSale,
+    handleProcessBarcodeScan,
+  ]);
 
   const categories = useMemo(() => {
     const hasDbCategories = dbCategories && dbCategories.length > 0;
@@ -546,14 +724,30 @@ export const POSTerminalPage: React.FC = () => {
                 type="text"
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (productSearch.trim()) {
+                      handleProcessBarcodeScan(productSearch.trim());
+                    }
+                  }
+                }}
                 placeholder={
                   language === 'ar'
-                    ? 'بحث سريع عن منتج (قهوة، ساندويش، عصير، كولا)...'
-                    : 'Quick search by name or code (Coffee, Sandwich, Juice, Cola)...'
+                    ? '🔍 بحث بالاسم أو امسح الباركود مباشرة...'
+                    : '🔍 Search by name or scan barcode directly...'
                 }
                 className="w-full bg-transparent text-xs sm:text-sm focus:outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400"
                 autoFocus
               />
+              <div
+                className="flex items-center gap-1 text-[10px] text-slate-400 font-bold bg-slate-100 dark:bg-[#1A1C21] px-2 py-0.5 rounded-lg border border-slate-200 dark:border-[#282C35] shrink-0 select-none cursor-pointer hover:text-emerald-500 transition-colors"
+                title={language === 'ar' ? 'ماسح الباركود متصل وجاهز للمسح' : 'Barcode scanner active & ready'}
+                onClick={() => searchInputRef.current?.focus()}
+              >
+                <Barcode className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="hidden sm:inline font-mono">SCAN</span>
+              </div>
             </div>
           </div>
 
@@ -1039,6 +1233,20 @@ export const POSTerminalPage: React.FC = () => {
         onClose={() => setLastCompletedSale(null)}
         sale={lastCompletedSale}
       />
+
+      {/* Floating Scan Notification Toast */}
+      {scanNotification && (
+        <div
+          className={`fixed bottom-5 left-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl font-bold text-xs border backdrop-blur-md transition-all ${
+            scanNotification.type === 'success'
+              ? 'bg-emerald-600/95 text-white border-emerald-500 shadow-emerald-950/20'
+              : 'bg-rose-600/95 text-white border-rose-500 shadow-rose-950/20'
+          }`}
+        >
+          <Barcode className="h-4 w-4 shrink-0" />
+          <span>{scanNotification.message}</span>
+        </div>
+      )}
     </div>
   );
 };

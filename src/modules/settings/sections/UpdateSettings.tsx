@@ -7,6 +7,20 @@ import { Badge } from '@components/ui/Badge';
 import { RefreshCw, CheckCircle2, Download, Sparkles, ShieldCheck } from 'lucide-react';
 
 const VERSION_CHANGELOG: Record<string, { en: string[]; ar: string[] }> = {
+  '1.0.17': {
+    en: [
+      'Barcode Scanner Support: Plug-and-play USB & wireless barcode scanner integration for instant product checkout.',
+      'Scan Anywhere in POS: Point & pull the trigger anywhere on the POS screen to immediately add items to cart.',
+      'Audio & Visual Scan Feedback: Crisp POS confirmation beep sound and instant on-screen notification.',
+      'Barcode Inventory Field: Easily scan or enter barcodes when creating or editing cafeteria products.',
+    ],
+    ar: [
+      'دعم ماسح الباركود: ربط فوري لماسحات الباركود السلكية واللاسلكية (USB) للبيع السريع.',
+      'مسح تلقائي من أي مكان: وجّه الماسح واضغط في شاشة نقطة البيع لإضافة الصنف فوراً إلى السلة دون الحاجة لتحديد خانة البحث.',
+      'تنبيه صوتي وبصري عند المسح: صوت تأكيد فوري ورسالة عائمة توضح اسم المنتج وسعره المضاف.',
+      'حقل الباركود في إدارة المنتجات: إمكانية مسح أو كتابة الباركود بسهولة عند إضافة أو تعديل أي صنف.',
+    ],
+  },
   '1.0.16': {
     en: [
       'Exact Product LBP Pricing: Fixed cent-truncation so entered LBP prices (e.g. 30,000 L.L) never lose 300 L.L ($0.33 vs $0.333333).',

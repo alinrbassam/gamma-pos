@@ -12,7 +12,7 @@ import { Input } from '@components/ui/Input';
 import { Button } from '@components/ui/Button';
 import { Card } from '@components/ui/Card';
 import { Alert } from '@components/ui/Alert';
-import { Trash2, Coins } from 'lucide-react';
+import { Trash2, Coins, Barcode } from 'lucide-react';
 
 const normalizeLbpAmount = (amountUsd: number, rate: number): number => {
   const rawLbp = amountUsd * rate;
@@ -43,6 +43,7 @@ export const ProductFormPage: React.FC = () => {
     resolver: zodResolver(ProductSchema),
     defaultValues: {
       sku: `SKU-${Math.floor(100000 + Math.random() * 900000)}`,
+      primaryBarcode: '',
       nameEn: '',
       nameAr: '',
       productType: 'Standard stock item',
@@ -85,6 +86,7 @@ export const ProductFormPage: React.FC = () => {
         if (res.success && res.data) {
           const p = res.data as ProductEntity & { quantity_on_hand?: number };
           setValue('sku', p.sku);
+          setValue('primaryBarcode', p.primary_barcode || '');
           setValue('nameEn', p.name_en);
           setValue('nameAr', p.name_ar || p.name_en);
           setValue('categoryId', p.category_id);
@@ -114,6 +116,7 @@ export const ProductFormPage: React.FC = () => {
     const trimmedEn = (data.nameEn || '').trim();
     data.nameEn = trimmedEn || trimmedAr;
     data.nameAr = trimmedAr || trimmedEn;
+    data.primaryBarcode = (data.primaryBarcode || '').trim() || undefined;
 
     // If entered in LBP, calculate exact floating point USD to avoid any 2-decimal truncation
     if (pricingCurrency === 'LBP') {
@@ -169,8 +172,8 @@ export const ProductFormPage: React.FC = () => {
       {successMsg && <Alert variant="success">{successMsg}</Alert>}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        {/* Section 1: Product Name (Bilingual Arabic & English) */}
-        <Card title={language === 'ar' ? '1. تفاصيل اسم المنتج' : '1. Product Details'}>
+        {/* Section 1: Product Name & Barcode */}
+        <Card title={language === 'ar' ? '1. تفاصيل اسم المنتج والباركود' : '1. Product Details & Barcode'}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label={language === 'ar' ? 'اسم المنتج (بالعربية) *' : 'Product Name (Arabic)'}
@@ -192,6 +195,44 @@ export const ProductFormPage: React.FC = () => {
               autoFocus={language !== 'ar'}
             />
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-100 dark:border-[#21242B]">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {language === 'ar' ? 'الباركود (امسح بالماسح الضوئي أو اكتبه)' : 'Barcode (Scan or Type)'}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder={language === 'ar' ? 'امسح الباركود هنا (اختياري)...' : 'Scan barcode or leave empty...'}
+                  {...register('primaryBarcode')}
+                  onKeyDown={(e) => {
+                    // Prevent barcode scanner Enter from accidentally submitting form prematurely
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
+                  className="w-full px-3.5 pr-10 py-2.5 bg-slate-50 dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-slate-900 dark:text-slate-100 font-mono text-sm focus:ring-2 focus:ring-[#C83818] focus:border-[#C83818] focus:outline-none"
+                />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                  <Barcode className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                {language === 'ar'
+                  ? '💡 اختياري: وجّه ماسح الباركود نحو المنتج ليتم إدخال الرقم تلقائياً.'
+                  : '💡 Optional: Aim scanner at product packaging to populate barcode.'}
+              </p>
+            </div>
+
+            <Input
+              label={language === 'ar' ? 'رمز الصنف (SKU)' : 'SKU / Item Code'}
+              {...register('sku')}
+              error={errors.sku?.message}
+              readOnly={Boolean(id)}
+            />
+          </div>
+
           <p className="text-[11px] text-slate-400 mt-2">
             {language === 'ar'
               ? '💡 يمكنك كتابة الاسم بالعربية وبالإنجليزية ليظهر بشكل واضح في شاشة الكاشير والفواتير والمنيو باللغتين.'

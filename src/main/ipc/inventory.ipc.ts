@@ -62,6 +62,21 @@ export function registerInventoryIpcHandlers(db: Database.Database): void {
   });
 
   ipcMain.handle(
+    IPC_CHANNELS.BARCODES_LOOKUP,
+    async (_, barcode: string): Promise<ApiResponse> => {
+      try {
+        const res = productService.getProductByBarcode(barcode);
+        return { success: true, data: res };
+      } catch (err) {
+        return {
+          success: false,
+          error: { code: 'BARCODE_LOOKUP_ERROR', message: (err as Error).message },
+        };
+      }
+    },
+  );
+
+  ipcMain.handle(
     IPC_CHANNELS.PRODUCTS_CREATE,
     async (_, payload: unknown, userId?: string): Promise<ApiResponse> => {
       try {
