@@ -11,6 +11,7 @@ import { POSHoldResumeModal } from './POSHoldResumeModal';
 import { POSHoldSaveModal } from './POSHoldSaveModal';
 import { ThermalReceiptModal } from './ThermalReceiptModal';
 import { POSTouchNumpad } from './POSTouchNumpad';
+import { DailyCloseoutModal } from './DailyCloseoutModal';
 import { formatUSD, formatLBP } from '../../renderer/utils/currency';
 import {
   Search,
@@ -21,12 +22,12 @@ import {
   PauseCircle,
   PlayCircle,
   RotateCcw,
-  Tag,
   UtensilsCrossed,
   Coffee,
   ShoppingBag,
   Bike,
   Barcode,
+  Moon,
 } from 'lucide-react';
 
 const getFormattedProductName = (
@@ -65,6 +66,142 @@ const getFormattedProductName = (
   }
 
   return lang === 'ar' ? (nameAr || nameEn) : (nameEn || nameAr);
+};
+
+const getProductVisualTheme = (
+  p: { id?: string; name_en?: string; name_ar?: string; category_id?: string },
+  categories: { id: string; labelEn: string; labelAr: string; icon?: string }[] = []
+): { emoji: string; badgeBg: string; badgeText: string; borderColor: string } => {
+  const name = `${p.name_en || ''} ${p.name_ar || ''} ${p.category_id || ''}`.toLowerCase();
+
+  // 1. Shisha / Hookah
+  if (
+    name.includes('shisha') || name.includes('hookah') || name.includes('argileh') ||
+    name.includes('أركيلة') || name.includes('شيشة') || name.includes('معسل') || name.includes('راس')
+  ) {
+    return {
+      emoji: '💨',
+      badgeBg: 'bg-amber-500/15 dark:bg-amber-500/25',
+      badgeText: 'text-amber-600 dark:text-amber-400',
+      borderColor: 'hover:border-amber-500/60',
+    };
+  }
+
+  // 2. Hot drinks (Coffee, Tea, Espresso, Nescafe, Cappuccino, Latte)
+  if (
+    name.includes('coffee') || name.includes('قهوة') || name.includes('espresso') ||
+    name.includes('tea') || name.includes('شاي') || name.includes('nescafe') ||
+    name.includes('latte') || name.includes('cappuccino') || name.includes('hot') ||
+    name.includes('ساخن') || name.includes('موكا')
+  ) {
+    return {
+      emoji: '☕',
+      badgeBg: 'bg-orange-500/15 dark:bg-orange-500/25',
+      badgeText: 'text-orange-600 dark:text-orange-400',
+      borderColor: 'hover:border-orange-500/60',
+    };
+  }
+
+  // 3. Potatoes / Fries / Batata
+  if (name.includes('batata') || name.includes('بطاطا') || name.includes('fries') || name.includes('chips')) {
+    return {
+      emoji: '🍟',
+      badgeBg: 'bg-amber-500/15 dark:bg-amber-500/25',
+      badgeText: 'text-amber-600 dark:text-amber-400',
+      borderColor: 'hover:border-amber-500/60',
+    };
+  }
+
+  // 4. Fresh Juices, Cocktails, Smoothies, Lemonade
+  if (
+    name.includes('juice') || name.includes('عصير') || name.includes('lemon') ||
+    name.includes('ليمون') || name.includes('cocktail') || name.includes('كوكتيل') ||
+    name.includes('smoothie') || name.includes('basil') || name.includes('tamer') ||
+    name.includes('karkadi') || name.includes('كركديه') || name.includes('تمر هندي')
+  ) {
+    return {
+      emoji: '🧃',
+      badgeBg: 'bg-emerald-500/15 dark:bg-emerald-500/25',
+      badgeText: 'text-emerald-600 dark:text-emerald-400',
+      borderColor: 'hover:border-emerald-500/60',
+    };
+  }
+
+  // 5. Sodas, Sparkling Water, Energy Drinks, Water (Pepsi, Mirinda, 7up, Redbull, Rim)
+  if (
+    name.includes('pepsi') || name.includes('ببسي') || name.includes('بيبسي') ||
+    name.includes('mirinda') || name.includes('ميرندا') || name.includes('7up') ||
+    name.includes('cola') || name.includes('كولا') || name.includes('soda') ||
+    name.includes('sparkling') || name.includes('rim') || name.includes('water') ||
+    name.includes('مياه') || name.includes('ماء') || name.includes('energy') ||
+    name.includes('redbull') || name.includes('boom')
+  ) {
+    return {
+      emoji: '🥤',
+      badgeBg: 'bg-sky-500/15 dark:bg-sky-500/25',
+      badgeText: 'text-sky-600 dark:text-sky-400',
+      borderColor: 'hover:border-sky-500/60',
+    };
+  }
+
+  // 6. Sandwiches, Burgers, Food, Meals
+  if (
+    name.includes('sandwich') || name.includes('ساندويش') || name.includes('burger') ||
+    name.includes('برغر') || name.includes('snack') || name.includes('وجبة') ||
+    name.includes('club') || name.includes('كلوب') || name.includes('toast') ||
+    name.includes('توست') || name.includes('wrap')
+  ) {
+    return {
+      emoji: '🥪',
+      badgeBg: 'bg-yellow-500/15 dark:bg-yellow-500/25',
+      badgeText: 'text-yellow-600 dark:text-yellow-400',
+      borderColor: 'hover:border-yellow-500/60',
+    };
+  }
+
+  // 7. Sweets, Desserts, Crepe, Waffle, Chocolate
+  if (
+    name.includes('crepe') || name.includes('كريب') || name.includes('waffle') ||
+    name.includes('وافل') || name.includes('chocolate') || name.includes('شوكولا') ||
+    name.includes('cake') || name.includes('كيك') || name.includes('sweet') ||
+    name.includes('حلو') || name.includes('dessert')
+  ) {
+    return {
+      emoji: '🍰',
+      badgeBg: 'bg-rose-500/15 dark:bg-rose-500/25',
+      badgeText: 'text-rose-600 dark:text-rose-400',
+      borderColor: 'hover:border-rose-500/60',
+    };
+  }
+
+  // 8. Nuts, Kaju, Seeds
+  if (name.includes('kaju') || name.includes('كاجو') || name.includes('nuts') || name.includes('مكسرات') || name.includes('بزر')) {
+    return {
+      emoji: '🥜',
+      badgeBg: 'bg-amber-600/15 dark:bg-amber-600/25',
+      badgeText: 'text-amber-700 dark:text-amber-400',
+      borderColor: 'hover:border-amber-600/60',
+    };
+  }
+
+  // 9. Match Category icon if available
+  const cat = categories.find((c) => c.id === p.category_id);
+  if (cat?.icon) {
+    return {
+      emoji: cat.icon,
+      badgeBg: 'bg-slate-500/15 dark:bg-slate-500/25',
+      badgeText: 'text-slate-700 dark:text-slate-300',
+      borderColor: 'hover:border-[#C83818]/60',
+    };
+  }
+
+  // Default Fallback
+  return {
+    emoji: '🍽️',
+    badgeBg: 'bg-[#C83818]/10 dark:bg-[#C83818]/20',
+    badgeText: 'text-[#C83818] dark:text-[#DF7E63]',
+    borderColor: 'hover:border-[#C83818]/60',
+  };
 };
 
 const normalizeLbpAmount = (amountUsd: number, rate: number): number => {
@@ -142,6 +279,7 @@ export const POSTerminalPage: React.FC = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showHoldModal, setShowHoldModal] = useState(false);
   const [showHoldSaveModal, setShowHoldSaveModal] = useState(false);
+  const [showCloseoutModal, setShowCloseoutModal] = useState(false);
   const [lastCompletedSale, setLastCompletedSale] = useState<SalesOrderEntity | null>(null);
   const [selectedCartIdx, setSelectedCartIdx] = useState<number | null>(null);
   const [numpadResetTrigger, setNumpadResetTrigger] = useState<number>(0);
@@ -878,44 +1016,50 @@ export const POSTerminalPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 pr-1">
+          <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 pr-1 auto-rows-max content-start">
             {displayProducts.map((p) => {
               const priceUsd = p.selling_price || 0;
               const priceLbp = normalizeLbpAmount(priceUsd, usdToLbpRate);
+              const theme = getProductVisualTheme(p, categories);
 
               return (
                 <div
                   key={p.id}
                   onClick={() => handleAddToCart(p, 1.0)}
-                  className="group relative bg-white dark:bg-[#141518] hover:bg-[#C83818]/5 dark:hover:bg-[#1A1C21] border border-slate-200 dark:border-[#21242B] hover:border-[#C83818]/60 dark:hover:border-[#C83818]/60 p-3.5 rounded-2xl cursor-pointer transition-all flex flex-col justify-between space-y-2.5 select-none active:scale-[0.98] shadow-xs hover:shadow-md"
+                  className={`group relative bg-white dark:bg-[#141518] hover:bg-slate-50 dark:hover:bg-[#1A1C21] border border-slate-200 dark:border-[#21242B] ${theme.borderColor} p-3 rounded-2xl cursor-pointer transition-all flex flex-col justify-between select-none active:scale-[0.98] shadow-xs hover:shadow-md min-h-[105px] space-y-2`}
                 >
                   <div>
-                    <div className="flex items-start justify-between gap-1 mb-2">
-                      <div className="rounded-xl bg-[#C83818]/10 dark:bg-[#C83818]/20 p-2 text-[#C83818] dark:text-[#DF7E63] group-hover:bg-[#C83818] group-hover:text-white transition-all shadow-xs">
-                        <Tag className="h-4 w-4" />
+                    <div className="flex items-center justify-between gap-1 mb-1.5">
+                      <div className={`w-8 h-8 rounded-xl ${theme.badgeBg} flex items-center justify-center text-base shadow-xs select-none transition-transform group-hover:scale-110`}>
+                        <span>{theme.emoji}</span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#1A1C21] border border-slate-200 dark:border-[#282C35] text-slate-600 dark:text-slate-300 font-semibold font-mono">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#1A1C21] border border-slate-200 dark:border-[#282C35] text-slate-500 dark:text-slate-400 font-semibold font-mono">
                         {p.base_unit_id === 'Kg'
                           ? language === 'ar'
-                            ? 'بالكيلو'
-                            : '/Kg'
+                            ? 'كيلو'
+                            : 'Kg'
                           : language === 'ar'
-                          ? 'بالقطعة'
-                          : '/Pc'}
+                          ? 'قطعة'
+                          : 'Pc'}
                       </span>
                     </div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#C83818] dark:group-hover:text-[#DF7E63] leading-snug">
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#C83818] dark:group-hover:text-[#DF7E63] leading-snug line-clamp-2">
                       {getFormattedProductName(p, language)}
                     </h4>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-[#21242B] flex flex-col items-baseline">
-                    <span className="text-sm sm:text-base font-extrabold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
-                      {formatLBP(priceLbp)}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-400 font-mono">
-                      {formatUSD(priceUsd)}
-                    </span>
+                  <div className="pt-2 border-t border-slate-100 dark:border-[#21242B] flex items-baseline justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 font-mono tracking-tight leading-none">
+                        {formatLBP(priceLbp)}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400 font-mono mt-0.5">
+                        {formatUSD(priceUsd)}
+                      </span>
+                    </div>
+                    <div className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-[#1A1C21] group-hover:bg-[#C83818] text-slate-400 group-hover:text-white flex items-center justify-center text-xs font-black transition-all shadow-xs">
+                      +
+                    </div>
                   </div>
                 </div>
               );
@@ -1165,6 +1309,14 @@ export const POSTerminalPage: React.FC = () => {
               <PlayCircle className="h-3.5 w-3.5 inline mr-1 rtl:mr-0 rtl:ml-1" />
               <span>{language === 'ar' ? 'استئناف' : 'Resume'}</span>
             </button>
+            <button
+              onClick={() => setShowCloseoutModal(true)}
+              className="px-2 py-1 text-[11px] font-bold rounded-lg border border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 flex items-center gap-1 shadow-xs transition-colors"
+              title={language === 'ar' ? 'تقفيل اليومية والصندوق (Z-Report)' : 'End-of-Day Closeout (Z-Report)'}
+            >
+              <Moon className="h-3.5 w-3.5 inline mr-1 rtl:mr-0 rtl:ml-1 text-purple-600 dark:text-purple-400" />
+              <span>{language === 'ar' ? 'تقفيل اليومية 🌙' : 'Close Day 🌙'}</span>
+            </button>
           </div>
         </div>
 
@@ -1232,6 +1384,11 @@ export const POSTerminalPage: React.FC = () => {
         isOpen={!!lastCompletedSale}
         onClose={() => setLastCompletedSale(null)}
         sale={lastCompletedSale}
+      />
+
+      <DailyCloseoutModal
+        isOpen={showCloseoutModal}
+        onClose={() => setShowCloseoutModal(false)}
       />
 
       {/* Floating Scan Notification Toast */}

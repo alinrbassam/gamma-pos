@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import { POSCheckoutInput } from '../../shared/validation';
-import { SalesOrderEntity } from '../../shared/types';
+import { SalesOrderEntity, DailyCloseoutReport } from '../../shared/types';
 import { InventoryService } from './inventory.service';
 import { PurchaseNumberingService } from './purchase-numbering.service';
 import { ProductRepository } from '../database/repositories/product.repository';
@@ -356,5 +356,260 @@ export class POSSalesService {
     });
 
     return this.getSaleById(saleId) as any;
+  }
+
+  public getDailyCloseoutReport(dateStr?: string): DailyCloseoutReport {
+    const today = dateStr || new Date().toISOString().split('T')[0];
+    const now = new Date().toISOString();
+
+    // 1. Fetch sales for the given date
+    const salesStmt = this.db.prepare(`
+      SELECT * FROM sales_orders
+      WHERE date(created_at, 'localtime') = ? OR date(created_at) = ?
+      ORDER BY created_at ASC
+    `);
+    const sales = salesStmt.all(today, today) as SalesOrderEntity[];
+
+    let totalOrders = 0;
+    let totalSalesUsd = 0;
+    let totalSalesLbp = 0;
+
+    let takeawayCount = 0;
+    let takeawayTotalUsd = 0;
+    let takeawayTotalLbp = 0;
+
+    let dineInCount = 0;
+    let dineInTotalUsd = 0;
+    let dineInTotalLbp = 0;
+
+    let playstationCount = 0;
+    let playstationTotalUsd = 0;
+    let playstationTotalLbp = 0;
+
+    let cashUsdCollected = 0;
+    let cashLbpCollected = 0;
+
+    let debtsCount = 0;
+    let debtsTotalUsd = 0;
+    let debtsTotalLbp = 0;
+
+    for (const sale of sales) {
+      if (sale.payment_status === 'Refunded' || sale.payment_status === 'Voided') {
+        continue;
+      }
+      totalOrders++;
+      const rate = sale.exchange_rate || 89500;
+      const saleUsd = Number(sale.grand_total) || 0;
+      const saleLbp = Math.round(saleUsd * rate);
+
+      totalSalesUsd += saleUsd;
+      totalSalesLbp += saleLbp;
+
+      // Section categorization
+      const isPS =
+        sale.order_type === 'playstation' ||
+        sale.invoice_number?.startsWith('INV-PS-') ||
+        sale.customer_name?.includes('PS');
+      const isDineIn = !isPS && (sale.order_type === 'dine_in' || Boolean(sale.table_number));
+
+      if (isPS) {
+        playstationCount++;
+        playstationTotalUsd += saleUsd;
+        playstationTotalLbp += saleLbp;
+      } else if (isDineIn) {
+        dineInCount++;
+        dineInTotalUsd += saleUsd;
+        dineInTotalLbp += saleLbp;
+      } else {
+        takeawayCount++;
+        takeawayTotalUsd += saleUsd;
+        takeawayTotalLbp += saleLbp;
+      }
+
+      // Payment categorization
+      const isDebt =
+        sale.payment_method === 'Borrow' ||
+        sale.payment_method === 'Credit' ||
+        sale.payment_status === 'Unpaid';
+
+      if (isDebt) {
+        debtsCount++;
+        debtsTotalUsd += saleUsd;
+        debtsTotalLbp += saleLbp;
+      } else {
+        const pUsd = Number(sale.paid_usd) || 0;
+        const cUsd = Number(sale.change_usd) || 0;
+        const pLbp = Number(sale.paid_lbp) || 0;
+        const cLbp = Number(sale.change_lbp) || 0;
+
+        if (pUsd === 0 && pLbp === 0) {
+          cashUsdCollected += saleUsd;
+        } else {
+          cashUsdCollected += Math.max(0, pUsd - cUsd);
+          cashLbpCollected += Math.max(0, pLbp - cLbp);
+        }
+      }
+    }
+
+    // 2. Fetch expenses logged today
+    let expenseRows: Array<{
+      id: string;
+      title: string;
+      category: string;
+      amount: number;
+      payment_method: string;
+      expense_date: string;
+    }> = [];
+
+    try {
+      const expStmt = this.db.prepare(`
+        SELECT id, title, category, amount, payment_method, expense_date
+        FROM expenses
+        WHERE date(expense_date) = ? OR date(created_at, 'localtime') = ? OR date(created_at) = ?
+        ORDER BY created_at ASC
+      `);
+      expenseRows = expStmt.all(today, today, today) as typeof expenseRows;
+    } catch {
+      // Expenses table might be empty or unmigrated in edge environments
+    }
+
+    let totalExpensesUsd = 0;
+    let totalExpensesLbp = 0;
+
+    for (const exp of expenseRows) {
+      const amt = Number(exp.amount) || 0;
+      if (amt >= 10000 || exp.payment_method?.includes('LBP')) {
+        totalExpensesLbp += amt;
+      } else {
+        totalExpensesUsd += amt;
+      }
+    }
+
+    // 3. Expected Drawer Cash
+    const netCashExpectedUsd = Math.max(0, cashUsdCollected - totalExpensesUsd);
+    const netCashExpectedLbp = Math.max(0, cashLbpCollected - totalExpensesLbp);
+
+    // 4. Shift status
+    let activeShiftId: string | null = null;
+    let shiftStatus = 'Closed';
+    try {
+      const shiftRow = this.db
+        .prepare("SELECT * FROM pos_shifts WHERE status = 'Open' ORDER BY opened_at DESC LIMIT 1")
+        .get() as any;
+      if (shiftRow) {
+        activeShiftId = shiftRow.id;
+        shiftStatus = 'Open';
+      }
+    } catch {
+      // pos_shifts table error handling
+    }
+
+    return {
+      date: today,
+      generatedAt: now,
+      totalOrders,
+      totalSalesUsd: Math.round(totalSalesUsd * 100) / 100,
+      totalSalesLbp,
+      takeawayCount,
+      takeawayTotalUsd: Math.round(takeawayTotalUsd * 100) / 100,
+      takeawayTotalLbp,
+      dineInCount,
+      dineInTotalUsd: Math.round(dineInTotalUsd * 100) / 100,
+      dineInTotalLbp,
+      playstationCount,
+      playstationTotalUsd: Math.round(playstationTotalUsd * 100) / 100,
+      playstationTotalLbp,
+      cashUsdCollected: Math.round(cashUsdCollected * 100) / 100,
+      cashLbpCollected,
+      debtsCount,
+      debtsTotalUsd: Math.round(debtsTotalUsd * 100) / 100,
+      debtsTotalLbp,
+      expensesCount: expenseRows.length,
+      totalExpensesUsd: Math.round(totalExpensesUsd * 100) / 100,
+      totalExpensesLbp,
+      expenseItems: expenseRows.map((e) => ({
+        id: e.id,
+        title: e.title,
+        category: e.category,
+        amount: e.amount,
+        payment_method: e.payment_method,
+      })),
+      netCashExpectedUsd: Math.round(netCashExpectedUsd * 100) / 100,
+      netCashExpectedLbp,
+      activeShiftId,
+      shiftStatus,
+    };
+  }
+
+  public closeDailyShift(
+    userId?: string,
+    actualCashUsd?: number,
+    actualCashLbp?: number,
+    notes?: string,
+  ): boolean {
+    const report = this.getDailyCloseoutReport();
+    const now = new Date().toISOString();
+
+    let activeShift: any = null;
+    try {
+      activeShift = this.db
+        .prepare("SELECT * FROM pos_shifts WHERE status = 'Open' ORDER BY opened_at DESC LIMIT 1")
+        .get();
+    } catch {
+      // pos_shifts error handling
+    }
+
+    const closingSummary =
+      notes ||
+      `Daily closeout. Orders: ${report.totalOrders}. Counted USD: $${actualCashUsd ?? report.netCashExpectedUsd}, Counted LBP: ${actualCashLbp ?? report.netCashExpectedLbp}`;
+
+    if (activeShift) {
+      this.db
+        .prepare(`
+        UPDATE pos_shifts
+        SET closed_at = ?,
+            closing_cash_actual = ?,
+            closing_cash_expected = ?,
+            status = 'Closed',
+            notes = ?
+        WHERE id = ?
+      `)
+        .run(
+          now,
+          actualCashUsd ?? report.netCashExpectedUsd,
+          report.netCashExpectedUsd,
+          closingSummary,
+          activeShift.id,
+        );
+    } else {
+      const shiftId = crypto.randomUUID();
+      try {
+        this.db
+          .prepare(`
+          INSERT INTO pos_shifts (id, user_id, opened_at, closed_at, opening_cash, closing_cash_actual, closing_cash_expected, status, notes)
+          VALUES (?, ?, ?, ?, 0, ?, ?, 'Closed', ?)
+        `)
+          .run(
+            shiftId,
+            userId || 'system',
+            now,
+            now,
+            actualCashUsd ?? report.netCashExpectedUsd,
+            report.netCashExpectedUsd,
+            closingSummary,
+          );
+      } catch (err) {
+        logger.error('POSSalesService', 'Failed inserting pos_shifts record', err);
+      }
+    }
+
+    this.auditRepo.logAction({
+      user_id: userId,
+      action: 'SHIFT_CLOSED',
+      module: 'POS',
+      details: `Daily shift closed. Orders: ${report.totalOrders}, Revenue: $${report.totalSalesUsd} (${report.totalSalesLbp} LBP)`,
+    });
+
+    return true;
   }
 }

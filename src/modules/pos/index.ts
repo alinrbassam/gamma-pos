@@ -2,6 +2,7 @@ import { RMSModule } from '@shared/types/module';
 import { POSTerminalPage } from './POSTerminalPage';
 import { SalesHistoryPage } from './SalesHistoryPage';
 import { DebtsPage } from './DebtsPage';
+import { DailyCloseoutPage } from './DailyCloseoutPage';
 
 export const POSModule: RMSModule = {
   id: 'pos',
@@ -21,6 +22,12 @@ export const POSModule: RMSModule = {
     {
       path: '/pos/debts',
       component: DebtsPage,
+      requiredPermission: 'pos.checkout',
+      exact: true,
+    },
+    {
+      path: '/pos/closeout',
+      component: DailyCloseoutPage,
       requiredPermission: 'pos.checkout',
       exact: true,
     },

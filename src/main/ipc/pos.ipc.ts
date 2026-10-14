@@ -165,4 +165,45 @@ export function registerPOSIpcHandlers(db: Database.Database): void {
       }
     },
   );
+
+  ipcMain.handle(
+    IPC_CHANNELS.POS_DAILY_CLOSEOUT_REPORT,
+    async (_, dateStr?: string): Promise<ApiResponse> => {
+      try {
+        const res = posSalesService.getDailyCloseoutReport(dateStr);
+        return { success: true, data: res };
+      } catch (err) {
+        logger.error('POSIPC', 'Failed to generate daily closeout report', err);
+        return {
+          success: false,
+          error: { code: 'DAILY_CLOSEOUT_ERROR', message: (err as Error).message },
+        };
+      }
+    },
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.POS_SHIFT_CLOSE,
+    async (
+      _,
+      payload: { actualCashUsd?: number; actualCashLbp?: number; notes?: string },
+      userId?: string,
+    ): Promise<ApiResponse> => {
+      try {
+        const res = posSalesService.closeDailyShift(
+          userId,
+          payload?.actualCashUsd,
+          payload?.actualCashLbp,
+          payload?.notes,
+        );
+        return { success: true, data: res };
+      } catch (err) {
+        logger.error('POSIPC', 'Failed to close daily shift', err);
+        return {
+          success: false,
+          error: { code: 'SHIFT_CLOSE_ERROR', message: (err as Error).message },
+        };
+      }
+    },
+  );
 }

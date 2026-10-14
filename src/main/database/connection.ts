@@ -73,6 +73,25 @@ export class DatabaseConnection {
         } catch (e) {
           logger.warn('DatabaseConnection', 'Could not create .bak backup before swap', e);
         }
+
+        // Clean up stale WAL and SHM files to prevent SQLite header/page mismatch
+        const walPath = `${this.dbPath}-wal`;
+        const shmPath = `${this.dbPath}-shm`;
+        if (fs.existsSync(walPath)) {
+          try {
+            fs.unlinkSync(walPath);
+          } catch (e) {
+            logger.warn('DatabaseConnection', 'Could not remove old WAL file', e);
+          }
+        }
+        if (fs.existsSync(shmPath)) {
+          try {
+            fs.unlinkSync(shmPath);
+          } catch (e) {
+            logger.warn('DatabaseConnection', 'Could not remove old SHM file', e);
+          }
+        }
+
         fs.copyFileSync(newDbPath, this.dbPath);
       }
 

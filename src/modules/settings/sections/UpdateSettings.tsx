@@ -7,6 +7,22 @@ import { Badge } from '@components/ui/Badge';
 import { RefreshCw, CheckCircle2, Download, Sparkles, ShieldCheck } from 'lucide-react';
 
 const VERSION_CHANGELOG: Record<string, { en: string[]; ar: string[] }> = {
+  '1.0.18': {
+    en: [
+      'Daily Closeout & Z-Report (تقفيل اليومية والكاش): Comprehensive end-of-day register closing and 80mm thermal Z-report with cashier reconciliation.',
+      'Department Revenue Breakdown: Separate totals for Takeaway POS, Dine-In Tables (☕), and PlayStation Lounge (🎮).',
+      'Database Backup Import & Disaster Recovery: 1-click database restore with automatic pre-restore safety snapshot.',
+      'Clean POS Numpad: Removed fast cash clutter to provide immediate full-size quantity keypad.',
+      'Advanced Inventory Movement Filters: Fast date presets (Today, Yesterday, 7 Days, Month) and movement type filtering.',
+    ],
+    ar: [
+      'تقفيل اليومية والكاش (تقرير Z): إقفال مالي شامل لنهاية الوردية وطباعة تقرير Z حراري 80 مم مع مطابقة نقدية الدرج.',
+      'تفصيل المبيعات حسب الأقسام: إيرادات مستقلة للطلبات المباشرة، طاولات الصالة (☕)، وصالة البلايستيشن (🎮).',
+      'استيراد واستعادة النسخ الاحتياطية: استرجاع مباشر لقاعدة البيانات مع أخذ نسخة أمان احتياطية تلقائياً قبل الاستعادة.',
+      'لوحة أرقام نقطة بيع مريحة: إزالة أزرار الكاش السريع لتوفير مساحة كاملة للوحة التحكم بالكميات.',
+      'فلاتر متقدمة لحركة المخزون: فلاتر سريعة للتواريخ (اليوم، أمس، 7 أيام، الشهر) وفلترة دقيقة حسب نوع الحركة.',
+    ],
+  },
   '1.0.17': {
     en: [
       'Barcode Scanner Support: Plug-and-play USB & wireless barcode scanner integration for instant product checkout.',

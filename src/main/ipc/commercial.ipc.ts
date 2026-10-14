@@ -95,6 +95,36 @@ export function registerCommercialIpcHandlers(db: Database.Database): void {
     }
   });
 
+  ipcMain.handle(IPC_CHANNELS.BACKUP_SELECT_FILE, async (): Promise<ApiResponse<string | null>> => {
+    try {
+      const { canceled, filePaths } = await dialog.showOpenDialog({
+        title: 'Select SQLite Database Backup File (*.db)',
+        filters: [
+          { name: 'SQLite Database Backups (*.db, *.sqlite, *.bak)', extensions: ['db', 'sqlite', 'sqlite3', 'bak'] },
+          { name: 'All Files (*.*)', extensions: ['*'] },
+        ],
+        properties: ['openFile'],
+      });
+      if (canceled || filePaths.length === 0) {
+        return { success: true, data: null };
+      }
+      return { success: true, data: filePaths[0] };
+    } catch (err) {
+      logger.error('CommercialIPC', 'Failed to open backup selection dialog', err);
+      return { success: false, error: { code: 'SELECT_BACKUP_ERROR', message: (err as Error).message } };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.BACKUP_RESTORE_FILE, async (_, filePath: string): Promise<ApiResponse<boolean>> => {
+    try {
+      const res = await backupService.restoreBackup(filePath);
+      return { success: true, data: res };
+    } catch (err) {
+      logger.error('CommercialIPC', 'Database restore failed', err);
+      return { success: false, error: { code: 'RESTORE_ERROR', message: (err as Error).message } };
+    }
+  });
+
   // Maintenance
   ipcMain.handle(IPC_CHANNELS.MAINTENANCE_VACUUM, async (): Promise<ApiResponse> => {
     try {

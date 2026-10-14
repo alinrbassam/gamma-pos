@@ -25,4 +25,16 @@ describe('BackupService & Automated Cloud-Sync', () => {
     expect(res.backupType).toBe('Full');
     expect(mockDb.backup).toHaveBeenCalled();
   });
+
+  it('should create pre-restore safety backup', async () => {
+    const res = await backupService.createPreRestoreBackup('./tmp_backups');
+    expect(res.backupType).toBe('PreRestore');
+    expect(res.fileName).toContain('PreRestore_Backup_');
+  });
+
+  it('should reject restore if file does not exist', async () => {
+    await expect(backupService.restoreBackup('./non_existent_file.db')).rejects.toThrow(
+      'Backup file not found',
+    );
+  });
 });

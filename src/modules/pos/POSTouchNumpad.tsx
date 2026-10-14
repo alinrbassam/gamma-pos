@@ -9,8 +9,6 @@ import {
   CreditCard,
   ChevronDown,
   ChevronUp,
-  Banknote,
-  Calculator,
 } from 'lucide-react';
 
 interface Props {
@@ -49,7 +47,6 @@ export const POSTouchNumpad: React.FC<Props> = ({
   const { language } = useLanguageStore();
   const isAr = language === 'ar';
 
-  const [activeTab, setActiveTab] = useState<'qty' | 'cash'>('qty');
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
   // Qty typing buffer state
@@ -68,16 +65,6 @@ export const POSTouchNumpad: React.FC<Props> = ({
     setIsFreshInput(true);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
   }, [selectedItemIndex, resetFreshInputTrigger]);
-
-  // Fast cash tender state
-  const [tenderedUsd, setTenderedUsd] = useState<number | null>(null);
-  const [tenderedLbp, setTenderedLbp] = useState<number | null>(null);
-
-  // Reset tender when grand total changes or cart clears
-  useEffect(() => {
-    setTenderedUsd(null);
-    setTenderedLbp(null);
-  }, [grandTotalUsd, cartEmpty]);
 
   // Handle Numpad digits for Quantity
   const handleDigit = (digit: string) => {
@@ -141,42 +128,9 @@ export const POSTouchNumpad: React.FC<Props> = ({
     setIsFreshInput(true);
   };
 
-  // Quick Cash Calculations
-  const effectivePaidUsd = tenderedUsd ?? (tenderedLbp ? 0 : grandTotalUsd);
-  const effectivePaidLbp = tenderedLbp ?? 0;
-  const totalPaidInUsd = effectivePaidUsd + effectivePaidLbp / (usdToLbpRate || 89500);
-
-  const changeUsd = Math.max(0, totalPaidInUsd - grandTotalUsd);
-  const changeLbp = Math.round(changeUsd * (usdToLbpRate || 89500));
-
-  const handleSelectQuickUsd = (amount: number) => {
-    setTenderedUsd(amount);
-    setTenderedLbp(null);
-  };
-
-  const handleSelectQuickLbp = (amount: number) => {
-    setTenderedLbp(amount);
-    setTenderedUsd(null);
-  };
-
-  const handleExactCash = (currency: 'USD' | 'LBP') => {
-    if (currency === 'USD') {
-      setTenderedUsd(grandTotalUsd);
-      setTenderedLbp(null);
-    } else {
-      setTenderedLbp(grandTotalLbp);
-      setTenderedUsd(null);
-    }
-  };
-
   const triggerFastCheckout = () => {
     if (cartEmpty || isLoading) return;
-    onFastPayAndPrint(
-      effectivePaidUsd,
-      effectivePaidLbp,
-      changeUsd,
-      changeLbp,
-    );
+    onFastPayAndPrint(grandTotalUsd, 0, 0, 0);
   };
 
   return (
@@ -215,36 +169,7 @@ export const POSTouchNumpad: React.FC<Props> = ({
       {/* Collapsible Keypad Body */}
       {!isCollapsed && (
         <div className="p-2.5 space-y-2">
-          {/* Keypad Mode Tabs */}
-          <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/80 dark:bg-[#1A1C21] rounded-xl border border-slate-300/60 dark:border-[#282C35]">
-            <button
-              onClick={() => setActiveTab('qty')}
-              className={`py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 transition-all ${
-                activeTab === 'qty'
-                  ? 'bg-white dark:bg-[#2A2E39] text-[#C83818] dark:text-[#DF7E63] shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              <Calculator className="w-3.5 h-3.5" />
-              <span>{isAr ? '🔢 تعديل الكمية (Qty)' : '🔢 Quantity (Qty)'}</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('cash')}
-              className={`py-1.5 rounded-lg text-xs font-black flex items-center justify-center gap-1.5 transition-all ${
-                activeTab === 'cash'
-                  ? 'bg-white dark:bg-[#2A2E39] text-emerald-600 dark:text-emerald-400 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              <Banknote className="w-3.5 h-3.5" />
-              <span>{isAr ? '💵 سداد سريع (Fast Cash)' : '💵 Fast Cash'}</span>
-            </button>
-          </div>
-
-          {/* TAB 1: QUANTITY TOUCHPAD */}
-          {activeTab === 'qty' && (
-            <div className="space-y-1.5">
+          <div className="space-y-1.5">
               {/* Selected Item Indicator */}
               <div className="px-2.5 py-1.5 bg-white dark:bg-[#1A1C21] rounded-xl border border-slate-200 dark:border-[#282C35] flex items-center justify-between text-xs">
                 <div className="min-w-0 truncate">
@@ -436,101 +361,6 @@ export const POSTouchNumpad: React.FC<Props> = ({
                 </button>
               </div>
             </div>
-          )}
-
-          {/* TAB 2: FAST CASH & PRESET BILLS */}
-          {activeTab === 'cash' && (
-            <div className="space-y-2">
-              {/* LBP Presets (First & Primary) */}
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-1">
-                  <span className="text-amber-600 dark:text-amber-400 font-extrabold">{isAr ? 'أوراق الليرة اللبنانية (L.L.):' : 'Lebanese Cash Bills (L.L.):'}</span>
-                  <button
-                    onClick={() => handleExactCash('LBP')}
-                    className="text-amber-600 dark:text-amber-400 font-extrabold hover:underline"
-                  >
-                    {isAr ? 'كاش تمام (ل.ل)' : 'Exact (L.L.)'}
-                  </button>
-                </div>
-                <div className="grid grid-cols-6 gap-1">
-                  {[
-                    { label: '100K', val: 100000 },
-                    { label: '250K', val: 250000 },
-                    { label: '500K', val: 500000 },
-                    { label: '1M', val: 1000000 },
-                    { label: '2M', val: 2000000 },
-                    { label: '5M', val: 5000000 },
-                  ].map((item) => (
-                    <button
-                      key={item.val}
-                      onClick={() => handleSelectQuickLbp(item.val)}
-                      className={`h-9 font-black font-mono text-xs rounded-xl border transition-all ${
-                        tenderedLbp === item.val
-                          ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-                          : 'bg-white dark:bg-[#1A1C21] text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 border-slate-200 dark:border-[#282C35]'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* USD Presets (Secondary) */}
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-1">
-                  <span>{isAr ? 'أوراق الدولار ($):' : 'USD Cash Bills ($):'}</span>
-                  <button
-                    onClick={() => handleExactCash('USD')}
-                    className="text-emerald-600 dark:text-emerald-400 font-extrabold hover:underline"
-                  >
-                    {isAr ? 'كاش تمام ($)' : 'Exact ($)'}
-                  </button>
-                </div>
-                <div className="grid grid-cols-5 gap-1">
-                  {[5, 10, 20, 50, 100].map((amt) => (
-                    <button
-                      key={amt}
-                      onClick={() => handleSelectQuickUsd(amt)}
-                      className={`h-9 font-black font-mono text-xs rounded-xl border transition-all ${
-                        tenderedUsd === amt
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                          : 'bg-white dark:bg-[#1A1C21] text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border-slate-200 dark:border-[#282C35]'
-                      }`}
-                    >
-                      ${amt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Live Change Indicator */}
-              <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-xl flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block">
-                    {isAr ? 'المدفوع من الزبون:' : 'Tendered Cash:'}
-                  </span>
-                  <span className="font-extrabold text-slate-800 dark:text-slate-200 font-mono">
-                    {tenderedLbp
-                      ? formatLBP(tenderedLbp)
-                      : tenderedUsd
-                      ? formatUSD(tenderedUsd)
-                      : isAr
-                      ? 'كاش تمام (Exact)'
-                      : 'Exact Amount'}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold block">
-                    {isAr ? 'الباقي للزبون (Change):' : 'Customer Change:'}
-                  </span>
-                  <span className="font-black text-emerald-600 dark:text-emerald-400 font-mono text-sm">
-                    {changeLbp > 0 ? `${formatLBP(changeLbp)} (${formatUSD(changeUsd)})` : (isAr ? '0 ل.ل' : '0 L.L.')}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Action Buttons: 1-Tap Fast Checkout vs Detailed Payment */}
           <div className="grid grid-cols-3 gap-1.5 pt-1">

@@ -189,7 +189,11 @@ export const App: React.FC = () => {
           />
           {allRoutes.map((r: RouteDefinition) => {
             const isCashierAllowed =
-              r.path === '/pos' || r.path === '/pos/debts' || r.path === '/playstation' || r.path === '/tables';
+              r.path === '/pos' ||
+              r.path === '/pos/debts' ||
+              r.path === '/playstation' ||
+              r.path === '/tables' ||
+              r.path === '/pos/closeout';
             return (
               <Route
                 key={r.path}

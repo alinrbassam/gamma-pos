@@ -133,7 +133,7 @@ export class InventoryRepository {
     return resultMovement!;
   }
 
-  public getMovements(productId?: string, limit = 100): InventoryMovementEntity[] {
+  public getMovements(productId?: string, limit = 500): InventoryMovementEntity[] {
     if (productId) {
       const stmt = this.db.prepare(`
         SELECT m.*, p.name_en as product_name, p.sku, COALESCE(u.symbol, u.code, '') as unit_symbol

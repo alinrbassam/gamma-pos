@@ -92,4 +92,15 @@ describe('POS Sales Service & FEFO Stock Integration', () => {
     expect(res.payment_status).toBe('Paid');
     expect(res.invoice_number).toContain('INV-');
   });
+
+  it('should generate daily closeout report and close shift', () => {
+    const report = salesService.getDailyCloseoutReport();
+    expect(report).toBeDefined();
+    expect(report.totalOrders).toBe(0);
+    expect(report.netCashExpectedUsd).toBe(0);
+    expect(report.netCashExpectedLbp).toBe(0);
+
+    const closed = salesService.closeDailyShift('user-1', 100, 9000000, 'Test closing');
+    expect(closed).toBe(true);
+  });
 });

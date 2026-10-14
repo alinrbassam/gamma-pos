@@ -50,7 +50,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       if (window.api?.getStockMovements) {
-        const res = await window.api.getStockMovements(productId, 100);
+        const res = await window.api.getStockMovements(productId, 500);
         if (res.success && res.data) {
           set({ movements: res.data as InventoryMovementEntity[] });
         }

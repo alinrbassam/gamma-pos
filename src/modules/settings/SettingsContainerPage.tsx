@@ -26,7 +26,6 @@ import {
   History,
   Sparkles,
   ShieldCheck,
-  Key,
   Wind,
 } from 'lucide-react';
 
@@ -49,16 +48,6 @@ export const SettingsContainerPage: React.FC = () => {
           ? 'Mot de Passe Gérant & Sécurité'
           : 'Manager Password & Security',
       icon: ShieldCheck,
-    },
-    {
-      id: 'licensing',
-      label:
-        language === 'ar'
-          ? 'ترخيص وتنشيط النظام'
-          : language === 'fr'
-          ? 'Licence & Activation'
-          : 'License & Activation',
-      icon: Key,
     },
     {
       id: 'language',

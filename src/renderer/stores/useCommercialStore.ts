@@ -74,6 +74,8 @@ interface CommercialState {
   loadBackups: () => Promise<void>;
   createFullBackup: (folder: string) => Promise<boolean>;
   createAutoBackup: (folder: string, retention?: number) => Promise<boolean>;
+  selectBackupFile: () => Promise<string | null>;
+  restoreBackup: (filePath: string) => Promise<boolean>;
   runVacuum: () => Promise<boolean>;
   runIntegrityCheck: () => Promise<{ status: string; result: string } | null>;
   loadDiagnostics: () => Promise<void>;
@@ -227,6 +229,42 @@ export const useCommercialStore = create<CommercialState>((set, get) => ({
     } catch (err) {
       set({ error: (err as Error).message });
       return false;
+    }
+  },
+
+  selectBackupFile: async () => {
+    try {
+      if (window.api?.selectBackupFile) {
+        const res = await window.api.selectBackupFile();
+        if (res.success && res.data) {
+          return res.data as string;
+        }
+      }
+      return null;
+    } catch (err) {
+      set({ error: (err as Error).message });
+      return null;
+    }
+  },
+
+  restoreBackup: async (filePath: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      if (window.api?.restoreBackupFile) {
+        const res = await window.api.restoreBackupFile(filePath);
+        if (res.success) {
+          await get().loadBackups();
+          return true;
+        } else {
+          set({ error: res.error?.message || 'Failed to restore backup' });
+        }
+      }
+      return false;
+    } catch (err) {
+      set({ error: (err as Error).message });
+      return false;
+    } finally {
+      set({ isLoading: false });
     }
   },
 

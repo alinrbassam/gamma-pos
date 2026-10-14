@@ -26,6 +26,7 @@ import {
   Gamepad2,
   UtensilsCrossed,
   Flame,
+  Moon,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -123,6 +124,12 @@ export const Sidebar: React.FC = () => {
           label: getLabel('سجل المبيعات والفواتير', 'Sales History', 'Historique des Ventes'),
           icon: History,
           path: '/pos/sales',
+        },
+        {
+          id: 'pos-closeout',
+          label: getLabel('تقفيل اليومية والصندوق 🌙', 'Daily Closeout (Z-Report) 🌙', 'Clôture Journalière (Z-Report) 🌙'),
+          icon: Moon,
+          path: '/pos/closeout',
         },
       ],
     },

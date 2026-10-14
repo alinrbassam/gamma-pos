@@ -100,6 +100,7 @@ export const IPC_CHANNELS = {
   POS_SHIFT_GET_ACTIVE: 'pos:shift_get_active',
   POS_SHIFT_OPEN: 'pos:shift_open',
   POS_SHIFT_CLOSE: 'pos:shift_close',
+  POS_DAILY_CLOSEOUT_REPORT: 'pos:daily_closeout_report',
 
   // Phase 6 Reports Channels
   REPORTS_DASHBOARD: 'reports:dashboard',
@@ -121,6 +122,7 @@ export const IPC_CHANNELS = {
   BACKUP_CREATE_FULL: 'backup:create_full',
   BACKUP_CREATE_AUTO: 'backup:create_auto',
   BACKUP_RESTORE_FILE: 'backup:restore_file',
+  BACKUP_SELECT_FILE: 'backup:select_file',
 
   MAINTENANCE_VACUUM: 'maintenance:vacuum',
   MAINTENANCE_INTEGRITY_CHECK: 'maintenance:integrity_check',

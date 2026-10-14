@@ -486,6 +486,42 @@ export interface POSShiftEntity {
   notes?: string;
 }
 
+export interface DailyCloseoutReport {
+  date: string;
+  generatedAt: string;
+  totalOrders: number;
+  totalSalesUsd: number;
+  totalSalesLbp: number;
+  takeawayCount: number;
+  takeawayTotalUsd: number;
+  takeawayTotalLbp: number;
+  dineInCount: number;
+  dineInTotalUsd: number;
+  dineInTotalLbp: number;
+  playstationCount: number;
+  playstationTotalUsd: number;
+  playstationTotalLbp: number;
+  cashUsdCollected: number;
+  cashLbpCollected: number;
+  debtsCount: number;
+  debtsTotalUsd: number;
+  debtsTotalLbp: number;
+  expensesCount: number;
+  totalExpensesUsd: number;
+  totalExpensesLbp: number;
+  expenseItems: Array<{
+    id: string;
+    title: string;
+    category: string;
+    amount: number;
+    payment_method: string;
+  }>;
+  netCashExpectedUsd: number;
+  netCashExpectedLbp: number;
+  activeShiftId?: string | null;
+  shiftStatus?: string;
+}
+
 export interface AppConfig {
   theme: ThemeMode;
   language: LanguageCode;
