@@ -241,7 +241,57 @@ export function ensureCafeteriaAndPlaystationColumns(db: Database.Database): voi
     } catch {
       // ignore
     }
+
+    reconcileLbpProductPrices(db);
   } catch {
     // Migration runner will catch or retry
+  }
+}
+
+export function reconcileLbpProductPrices(db: Database.Database): void {
+  try {
+    const rateRow = db.prepare("SELECT value FROM business_settings WHERE key = 'usd_to_lbp_rate'").get() as { value?: string } | undefined;
+    const rate = rateRow?.value ? parseFloat(rateRow.value) : 90000;
+    if (!rate || rate <= 0) return;
+
+    const products = db.prepare('SELECT id, selling_price, purchase_cost FROM products WHERE is_active = 1').all() as Array<{
+      id: string;
+      selling_price: number;
+      purchase_cost: number;
+    }>;
+
+    const updateStmt = db.prepare('UPDATE products SET selling_price = ?, purchase_cost = ? WHERE id = ?');
+
+    for (const p of products) {
+      let changed = false;
+      let newSellingPrice = p.selling_price;
+      let newPurchaseCost = p.purchase_cost;
+
+      if (p.selling_price > 0) {
+        const rawLbp = p.selling_price * rate;
+        const roundedThousand = Math.round(rawLbp / 1000) * 1000;
+        const diff = Math.abs(rawLbp - roundedThousand);
+        if (diff > 0.001 && diff <= 450) {
+          newSellingPrice = roundedThousand / rate;
+          changed = true;
+        }
+      }
+
+      if (p.purchase_cost > 0) {
+        const rawCostLbp = p.purchase_cost * rate;
+        const roundedCostThousand = Math.round(rawCostLbp / 1000) * 1000;
+        const diffCost = Math.abs(rawCostLbp - roundedCostThousand);
+        if (diffCost > 0.001 && diffCost <= 450) {
+          newPurchaseCost = roundedCostThousand / rate;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        updateStmt.run(newSellingPrice, newPurchaseCost, p.id);
+      }
+    }
+  } catch {
+    // ignore
   }
 }

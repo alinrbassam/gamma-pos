@@ -14,6 +14,12 @@ import { Card } from '@components/ui/Card';
 import { Alert } from '@components/ui/Alert';
 import { Trash2, Coins } from 'lucide-react';
 
+const normalizeLbpAmount = (amountUsd: number, rate: number): number => {
+  const rawLbp = amountUsd * rate;
+  const roundedThousand = Math.round(rawLbp / 1000) * 1000;
+  return Math.abs(rawLbp - roundedThousand) <= 450 && rawLbp >= 1000 ? roundedThousand : Math.round(rawLbp);
+};
+
 export const ProductFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -87,10 +93,10 @@ export const ProductFormPage: React.FC = () => {
           setValue('sellingPrice', p.selling_price);
           const effectiveRate = usdToLbpRate || 89500;
           if (p.selling_price) {
-            setSellingPriceLbp(String(Math.round(p.selling_price * effectiveRate)));
+            setSellingPriceLbp(String(normalizeLbpAmount(p.selling_price, effectiveRate)));
           }
           if (p.purchase_cost) {
-            setPurchaseCostLbp(String(Math.round(p.purchase_cost * effectiveRate)));
+            setPurchaseCostLbp(String(normalizeLbpAmount(p.purchase_cost, effectiveRate)));
           }
           setValue('minSellingPrice', p.min_selling_price || 0);
           setValue('trackInventory', p.track_inventory === 1);
@@ -108,6 +114,19 @@ export const ProductFormPage: React.FC = () => {
     const trimmedEn = (data.nameEn || '').trim();
     data.nameEn = trimmedEn || trimmedAr;
     data.nameAr = trimmedAr || trimmedEn;
+
+    // If entered in LBP, calculate exact floating point USD to avoid any 2-decimal truncation
+    if (pricingCurrency === 'LBP') {
+      const effectiveRate = usdToLbpRate || 89500;
+      if (sellingPriceLbp) {
+        const rawNum = parseFloat(sellingPriceLbp) || 0;
+        data.sellingPrice = effectiveRate > 0 ? rawNum / effectiveRate : 0;
+      }
+      if (purchaseCostLbp) {
+        const rawCostNum = parseFloat(purchaseCostLbp) || 0;
+        data.purchaseCost = effectiveRate > 0 ? rawCostNum / effectiveRate : 0;
+      }
+    }
 
     // Ensure a valid baseUnitId is always assigned
     if (!data.baseUnitId && units.length > 0) {
@@ -232,7 +251,7 @@ export const ProductFormPage: React.FC = () => {
                   onClick={() => {
                     setPricingCurrency('LBP');
                     if (sellingPrice > 0 && !sellingPriceLbp) {
-                      setSellingPriceLbp(String(Math.round(sellingPrice * (usdToLbpRate || 89500))));
+                      setSellingPriceLbp(String(normalizeLbpAmount(sellingPrice, usdToLbpRate || 89500)));
                     }
                   }}
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -278,7 +297,7 @@ export const ProductFormPage: React.FC = () => {
                         setSellingPriceLbp(val);
                         const num = parseFloat(val) || 0;
                         const effectiveRate = usdToLbpRate || 89500;
-                        const usd = effectiveRate > 0 ? Math.round((num / effectiveRate) * 100) / 100 : 0;
+                        const usd = effectiveRate > 0 ? num / effectiveRate : 0;
                         setValue('sellingPrice', usd, { shouldValidate: true });
                       }}
                       className={`w-full px-3 pr-14 py-2.5 bg-slate-50 dark:bg-[#0E0F12] border ${
@@ -318,7 +337,7 @@ export const ProductFormPage: React.FC = () => {
                         setPurchaseCostLbp(val);
                         const num = parseFloat(val) || 0;
                         const effectiveRate = usdToLbpRate || 89500;
-                        const usd = effectiveRate > 0 ? Math.round((num / effectiveRate) * 100) / 100 : 0;
+                        const usd = effectiveRate > 0 ? num / effectiveRate : 0;
                         setValue('purchaseCost', usd);
                       }}
                       className="w-full px-3 pr-14 py-2.5 bg-slate-50 dark:bg-[#0E0F12] border border-slate-300 dark:border-[#282C35] rounded-xl text-slate-900 dark:text-slate-100 font-bold text-sm focus:ring-2 focus:ring-[#C83818] focus:border-[#C83818] focus:outline-none"

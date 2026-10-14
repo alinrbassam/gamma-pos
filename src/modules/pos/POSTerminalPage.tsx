@@ -66,6 +66,12 @@ const getFormattedProductName = (
   return lang === 'ar' ? (nameAr || nameEn) : (nameEn || nameAr);
 };
 
+const normalizeLbpAmount = (amountUsd: number, rate: number): number => {
+  const rawLbp = amountUsd * rate;
+  const roundedThousand = Math.round(rawLbp / 1000) * 1000;
+  return Math.abs(rawLbp - roundedThousand) <= 450 && rawLbp >= 1000 ? roundedThousand : Math.round(rawLbp);
+};
+
 export const POSTerminalPage: React.FC = () => {
   const {
     cart,
@@ -310,7 +316,7 @@ export const POSTerminalPage: React.FC = () => {
 
     cart.forEach((item) => {
       const rawLineSubUsd = item.quantity * item.unitPrice;
-      const lineSubLbp = Math.round(rawLineSubUsd * usdToLbpRate);
+      const lineSubLbp = normalizeLbpAmount(rawLineSubUsd, usdToLbpRate);
       const lineSub = Math.round(rawLineSubUsd * 100) / 100;
       // Per user instruction: discount is ONLY on total receipt, not on item
       const lineDisc = 0;
@@ -681,7 +687,7 @@ export const POSTerminalPage: React.FC = () => {
           <div className="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 pr-1">
             {displayProducts.map((p) => {
               const priceUsd = p.selling_price || 0;
-              const priceLbp = Math.round(priceUsd * usdToLbpRate);
+              const priceLbp = normalizeLbpAmount(priceUsd, usdToLbpRate);
 
               return (
                 <div
@@ -760,7 +766,7 @@ export const POSTerminalPage: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-[140px]">
           {cart.map((item, idx) => {
             const lineSubUsd = item.quantity * item.unitPrice;
-            const lineSubLbp = Math.round(lineSubUsd * usdToLbpRate);
+            const lineSubLbp = normalizeLbpAmount(lineSubUsd, usdToLbpRate);
             const isSelected = selectedCartIdx === idx;
 
             return (
@@ -863,7 +869,7 @@ export const POSTerminalPage: React.FC = () => {
                       <input
                         type="text"
                         inputMode="numeric"
-                        value={Math.round(item.unitPrice * usdToLbpRate).toLocaleString('en-US')}
+                        value={normalizeLbpAmount(item.unitPrice, usdToLbpRate).toLocaleString('en-US')}
                         onFocus={(e) => {
                           setSelectedCartIdx(idx);
                           setNumpadResetTrigger((prev) => prev + 1);

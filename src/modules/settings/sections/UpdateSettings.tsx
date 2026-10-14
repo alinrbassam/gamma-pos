@@ -7,6 +7,18 @@ import { Badge } from '@components/ui/Badge';
 import { RefreshCw, CheckCircle2, Download, Sparkles, ShieldCheck } from 'lucide-react';
 
 const VERSION_CHANGELOG: Record<string, { en: string[]; ar: string[] }> = {
+  '1.0.16': {
+    en: [
+      'Exact Product LBP Pricing: Fixed cent-truncation so entered LBP prices (e.g. 30,000 L.L) never lose 300 L.L ($0.33 vs $0.333333).',
+      'Automatic Price Healing: Existing catalog items with fractional truncation are automatically corrected on startup and in POS.',
+      'POS & Cart Perfect Match: Menu cards, cart items, and line subtotals display and charge exact round LBP amounts.',
+    ],
+    ar: [
+      'دقة تامة لأسعار المنتجات بالليرة: معالجة تقريب السنتات لضمان عدم ضياع أي ليرة (مثل 30,000 ل.ل تظهر 30,000 ل.ل بدقة تامة دون نقص 300 ليرة).',
+      'تصحيح تلقائي للمنتجات الحالية: معالجة تلقائية لأي منتج تم حفظه مسبقاً بفارق تقريب السنتات عند بدء التشغيل وشاشة البيع.',
+      'تطابق تام في نقطة البيع والسلة: بطاقات الأصناف والسلة ومجاميع الفواتير متطابقة بالليرة دون أي كسور.',
+    ],
+  },
   '1.0.15': {
     en: [
       'Live Version Synchronization: Sidebar top header badge now always displays the exact active version installed.',
